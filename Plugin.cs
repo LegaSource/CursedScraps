@@ -11,7 +11,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "1.0.0";
+        private const string modVersion = "1.0.3";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -30,7 +30,7 @@ namespace CursedScraps
             configFile = Config;
             ConfigManager.Load();
             curseEffects = ConfigManager.GetCurseEffectsFromConfig();
-            
+
             harmony.PatchAll(typeof(CursedScraps));
             harmony.PatchAll(typeof(HUDManagerPatch));
             harmony.PatchAll(typeof(ItemManagerPatch));

@@ -23,5 +23,11 @@
         public const int PARALYSIS_VALUE = -8;
         public const string SHADOW = "Shadow";
         public const int SHADOW_VALUE = -9;
+        public const string SYNCHRONIZATION = "Synchronization";
+        public const string SYNC_CORE = "Sync Core";
+        public const string SYNC_REFLECTION = "Sync Reflection";
+        public const int SYNCHRONIZATION_VALUE = -10;
+        public const string DIMINUTIVE = "Diminutive";
+        public const int DIMINUTIVE_VALUE = -11;
     }
 }

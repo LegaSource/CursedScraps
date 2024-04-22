@@ -9,8 +9,6 @@ namespace CursedScraps.Patches
 {
     internal class HUDManagerPatch
     {
-        public static bool isBlurry = false;
-
         [HarmonyPatch(typeof(HUDManager), "UpdateScanNodes")]
         [HarmonyPostfix]
         private static void ScanManager(ref Dictionary<RectTransform, ScanNodeProperties>  ___scanNodes, ref RectTransform[] ___scanElements)
@@ -30,12 +28,12 @@ namespace CursedScraps.Patches
                             TextMeshProUGUI[] scanElementText = element.gameObject.GetComponentsInChildren<TextMeshProUGUI>();
                             if (scanElementText != null && scanElementText.Length > 1)
                             {
-                                if (scanElementText[0].text.ToString().Equals(Constants.CURSE_PILLS))
+                                if (scanElementText[1].text != null && scanElementText[0].text.ToString().Equals(Constants.CURSE_PILLS))
                                 {
                                     // nodeType = 0 --> scan bleu
                                     element.GetComponent<Animator>().SetInteger("colorNumber", 0);
                                 }
-                                else
+                                else if (scanElementText[1].text != null)
                                 {
                                     string[] splitText = scanElementText[1].text.Split(new string[] { "\nCurse: " }, StringSplitOptions.None);
                                     if (splitText.Length > 1)
@@ -59,7 +57,7 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void UpdateScreenFilters(ref Volume ___drunknessFilter, ref Volume ___flashbangScreenFilter)
         {
-            if (isBlurry)
+            if (PlayerManagerPatch.activeCurses.Contains(Constants.BLURRY))
             {
                 ___drunknessFilter.weight = 1f;
             }

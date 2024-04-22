@@ -7,13 +7,11 @@ namespace CursedScraps.Patches
 {
     internal class EnemyAIPatch
     {
-        public static bool isShadow = false;
-
-        [HarmonyPatch(typeof(EnemyAI), "UpdateEnemyPositionClientRpc")]
+        [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.SetClientCalculatingAI))]
         [HarmonyPostfix]
         private static void UpdateMeshWithShadowCurse(ref EnemyAI __instance)
         {
-            if (isShadow)
+            if (PlayerManagerPatch.activeCurses.Contains(Constants.SHADOW))
             {
                 ScanNodeProperties componentInChildren = ((Component)(object)__instance).gameObject.GetComponentInChildren<ScanNodeProperties>();
                 if (componentInChildren != null && HUDManager.Instance != null)
@@ -21,11 +19,11 @@ namespace CursedScraps.Patches
                     FieldInfo scanNodes = AccessTools.Field(typeof(HUDManager), "scanNodes");
                     if (((Dictionary<RectTransform, ScanNodeProperties>)scanNodes.GetValue(HUDManager.Instance)).ContainsValue(componentInChildren))
                     {
-                        __instance.EnableEnemyMesh(false);
+                        __instance.EnableEnemyMesh(true);
                     }
                     else
                     {
-                        __instance.EnableEnemyMesh(true);
+                        __instance.EnableEnemyMesh(false);
                     }
                 }
             }
