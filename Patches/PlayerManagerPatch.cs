@@ -272,14 +272,16 @@ namespace CursedScraps.Patches
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DiscardHeldObject))]
-        [HarmonyPostfix]
-        private static void PostDropObject(ref PlayerControllerB __instance)
-        {
-            if (activeCurses.Contains(Constants.ERRANT))
-            {
-                TeleportPlayer(ref __instance);
-            }
-        }
+		[HarmonyPostfix]
+		private static void PostDropObject(ref PlayerControllerB __instance)
+		{
+			if (__instance.currentlyHeldObjectServer != null
+				&& !GetCurseEffect(ref __instance.currentlyHeldObjectServer).Equals(Constants.CAPTIVE)
+				&& activeCurses.Contains(Constants.ERRANT))
+			{
+				TeleportPlayer(ref __instance);
+			}
+		}
 
         [HarmonyPatch(typeof(PlayerControllerB), "UpdatePlayerPositionClientRpc")]
         [HarmonyPostfix]
@@ -685,16 +687,19 @@ namespace CursedScraps.Patches
         }
 
         private static void TeleportPlayer(ref PlayerControllerB player)
-        {
-            Vector3 position = RoundManager.Instance.insideAINodes[UnityEngine.Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
-            position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
-            player.isInElevator = false;
-            player.isInHangarShipRoom = false;
-            player.isInsideFactory = true;
-            player.averageVelocity = 0f;
-            player.velocityLastFrame = Vector3.zero;
-            player.TeleportPlayer(position);
-        }
+		{
+			if (!player.isInHangarShipRoom)
+			{
+				Vector3 position = RoundManager.Instance.insideAINodes[UnityEngine.Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
+				position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
+				player.isInElevator = false;
+				player.isInHangarShipRoom = false;
+				player.isInsideFactory = true;
+				player.averageVelocity = 0f;
+				player.velocityLastFrame = Vector3.zero;
+				player.TeleportPlayer(position);
+			}
+		}
 
         internal static void Paralyze(ref PlayerControllerB __instance)
         {
