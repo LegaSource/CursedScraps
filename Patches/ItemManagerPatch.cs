@@ -72,6 +72,9 @@ namespace CursedScraps.Patches
                     case Constants.DIMINUTIVE_VALUE:
                         curseEffect = new CurseEffect(Constants.DIMINUTIVE, ConfigManager.diminutiveMultiplier.Value, ConfigManager.diminutiveWeight.Value);
                         break;
+                    case Constants.EXPLORATION_VALUE:
+                        curseEffect = new CurseEffect(Constants.EXPLORATION, ConfigManager.explorationMultiplier.Value, ConfigManager.explorationWeight.Value);
+                        break;
                     default:
                         Debug.LogError($"Effect not managed in SetScrapValueOverride: {curseEffect.Name}");
                         break;
@@ -118,10 +121,6 @@ namespace CursedScraps.Patches
                     scrapSyncToDestroy = scrapObject;
                     scrapObject = coreScrap;
                 }
-            }
-            else if (!string.IsNullOrEmpty(curseEffect) && curseEffect.Equals(Constants.DIMINUTIVE))
-            {
-                PlayerManagerPatch.ApplyDiminutive(false, ref GameNetworkManager.Instance.localPlayerController);
             }
             RemoveObjectEffect(ref scrapObject);
             return true;
@@ -217,6 +216,9 @@ namespace CursedScraps.Patches
                                     break;
                                 case Constants.DIMINUTIVE:
                                     scrapValues[i] = Constants.DIMINUTIVE_VALUE;
+                                    break;
+                                case Constants.EXPLORATION:
+                                    scrapValues[i] = Constants.EXPLORATION_VALUE;
                                     break;
                                 default:
                                     Debug.LogError($"Effect not managed in CurseScrapValue: {curseEffect.Name}");

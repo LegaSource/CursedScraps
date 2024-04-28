@@ -8,6 +8,9 @@ namespace CursedScraps
         // GLOBAL
         public static ConfigEntry<int> globalChance;
         public static ConfigEntry<bool> globalPrevent;
+        // HIDE MECHANIC
+        public static ConfigEntry<string> hidingMode;
+        public static ConfigEntry<int> hidingCounter;
         // ANTI-CURSE PILLS
         public static ConfigEntry<bool> isPills;
         public static ConfigEntry<float> pillsChance;
@@ -56,12 +59,20 @@ namespace CursedScraps
         public static ConfigEntry<bool> isDiminutive;
         public static ConfigEntry<float> diminutiveMultiplier;
         public static ConfigEntry<string> diminutiveWeight;
+        // EXPLORATION
+        public static ConfigEntry<bool> isExploration;
+        public static ConfigEntry<float> explorationMultiplier;
+        public static ConfigEntry<string> explorationWeight;
+        public static ConfigEntry<float> explorationTime;
 
         internal static void Load()
         {
             // GLOBAL
             globalChance = CursedScraps.configFile.Bind<int>("_Global_", "Chance", 30, "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.");
             globalPrevent = CursedScraps.configFile.Bind<bool>("_Global_", "Preventing Settings Changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
+            // HIDE MECHANIC
+            hidingMode = CursedScraps.configFile.Bind<string>("_Hiding mechanic_", "Mode", Constants.HIDING_COUNTER, "Mode for the hiding mechanic.\n" + Constants.HIDING_ALWAYS + " - Always hide curses.\n" + Constants.HIDING_NEVER + " - Never hide curses.\n" + Constants.HIDING_COUNTER + " - Use a counter to hide curses once a certain number of non-cursed items have been picked up.");
+            hidingCounter = CursedScraps.configFile.Bind<int>("_Hiding mechanic_", "Counter", 10, "Number of non-cursed items that must be picked up before curses are concealed.\nThe counter is reset each time a cursed item is picked up.");
             // ANTI-CURSE PILLS
             isPills = CursedScraps.configFile.Bind<bool>(Constants.CURSE_PILLS, "Enable", true, "Is " + Constants.CURSE_PILLS + " item enabled?\nConsumable that removes all active curses on the player.");
             pillsChance = CursedScraps.configFile.Bind<float>(Constants.CURSE_PILLS, "Chance", 15, "Overall chance of pill appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.");
@@ -108,8 +119,13 @@ namespace CursedScraps
             synchronizationWeight = CursedScraps.configFile.Bind<string>(Constants.SYNCHRONIZATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.SYNCHRONIZATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             // DIMINUTIVE
             isDiminutive = CursedScraps.configFile.Bind<bool>(Constants.DIMINUTIVE, "Enable", true, "Is " + Constants.DIMINUTIVE + " curse enabled?\nReduces the player's size.");
-            diminutiveMultiplier = CursedScraps.configFile.Bind<float>(Constants.DIMINUTIVE, "Multiplier", 2.5f, "Value multiplier for scraps with the " + Constants.DIMINUTIVE + " curse.");
+            diminutiveMultiplier = CursedScraps.configFile.Bind<float>(Constants.DIMINUTIVE, "Multiplier", 3f, "Value multiplier for scraps with the " + Constants.DIMINUTIVE + " curse.");
             diminutiveWeight = CursedScraps.configFile.Bind<string>(Constants.DIMINUTIVE, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.DIMINUTIVE + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            // EXPLORATION
+            isExploration = CursedScraps.configFile.Bind<bool>(Constants.EXPLORATION, "Enable", true, "Is " + Constants.EXPLORATION + " curse enabled?\nPrevents the player from exiting or entering the factory through all doors except one.");
+            explorationMultiplier = CursedScraps.configFile.Bind<float>(Constants.EXPLORATION, "Multiplier", 2.5f, "Value multiplier for scraps with the " + Constants.EXPLORATION + " curse.");
+            explorationWeight = CursedScraps.configFile.Bind<string>(Constants.EXPLORATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.EXPLORATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            explorationTime = CursedScraps.configFile.Bind<float>(Constants.EXPLORATION, "Time", 10f, "Duration in seconds during which the player can scan the exit door they need to use.");
         }
 
         internal static List<CurseEffect> GetCurseEffectsFromConfig()
@@ -126,6 +142,7 @@ namespace CursedScraps
             if (isShadow.Value) curseEffects.Add(new CurseEffect(Constants.SHADOW, shadowMultiplier.Value, shadowWeight.Value));
             if (isSynchronization.Value) curseEffects.Add(new CurseEffect(Constants.SYNCHRONIZATION, synchronizationMultiplier.Value, synchronizationWeight.Value));
             if (isDiminutive.Value) curseEffects.Add(new CurseEffect(Constants.DIMINUTIVE, diminutiveMultiplier.Value, diminutiveWeight.Value));
+            if (isExploration.Value) curseEffects.Add(new CurseEffect(Constants.EXPLORATION, explorationMultiplier.Value, explorationWeight.Value));
 
             return curseEffects;
         }

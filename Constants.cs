@@ -2,6 +2,10 @@
 {
     internal class Constants
     {
+        // Hiding mechanic
+        public const string HIDING_ALWAYS = "Always";
+        public const string HIDING_COUNTER = "Counter";
+        public const string HIDING_NEVER = "Never";
         // Items
         public const string CURSE_PILLS = "Anti-curse pills";
         // Curse effects
@@ -29,5 +33,9 @@
         public const int SYNCHRONIZATION_VALUE = -10;
         public const string DIMINUTIVE = "Diminutive";
         public const int DIMINUTIVE_VALUE = -11;
+        public const string EXPLORATION = "Exploration";
+        public const int EXPLORATION_VALUE = -12;
+        // Impossible action
+        public const string IMPOSSIBLE_ACTION = "Impossible action";
     }
 }

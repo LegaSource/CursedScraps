@@ -14,7 +14,8 @@ namespace CursedScraps.Patches
 {
     internal class PlayerManagerPatch : NetworkBehaviour
     {
-        public static List<string> activeCurses = new List<string>();
+        internal static int curseCounter = 0;
+        internal static List<string> activeCurses = new List<string>();
         private static List<string> actionsBlockedBy = new List<string>();
         private static GrabbableObject lastGrabbedObject;
         private static List<PlayerControllerB> immunedPlayers = new List<PlayerControllerB>();
@@ -43,7 +44,7 @@ namespace CursedScraps.Patches
             {
                 if (immunedPlayers.Contains(__instance))
                 {
-                    HUDManager.Instance.DisplayTip("Impossible action", "An immunity for the next picked up cursed scrap is already active.");
+                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "An immunity for the next picked up cursed scrap is already active.");
                 }
                 else
                 {
@@ -152,6 +153,7 @@ namespace CursedScraps.Patches
                     {
                         // Fait le plus tôt possible pour être sûr de stocker la bonne position
                         Vector3 position = grabbedScrap.transform.position;
+                        curseCounter = 0;
                         if (curseEffect.Equals(Constants.SYNCHRONIZATION))
                         {
                             if (GameNetworkManager.Instance.localPlayerController.IsServer || GameNetworkManager.Instance.localPlayerController.IsHost)
@@ -210,6 +212,10 @@ namespace CursedScraps.Patches
                         immunedPlayers.Remove(__instance);
                     }
                 }
+                else
+                {
+                    curseCounter++;
+                }
             }
         }
 
@@ -232,7 +238,7 @@ namespace CursedScraps.Patches
                 ((activeCurses.Contains(Constants.MUTE) && optionType == SettingsOptionType.MicEnabled)
                  || (activeCurses.Contains(Constants.DEAFNESS) && optionType == SettingsOptionType.MasterVolume)))
             {
-                HUDManager.Instance.DisplayTip("Impossible action", "A curse prevents you from performing this action.");
+                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
                 return false;
             }
             return true;
@@ -244,7 +250,7 @@ namespace CursedScraps.Patches
         {
             if (ConfigManager.globalPrevent.Value && activeCurses.Contains(Constants.CONFUSION) && rebindableAction.action.name.Equals("Move"))
             {
-                HUDManager.Instance.DisplayTip("Impossible action", "A curse prevents you from performing this action.");
+                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
                 return false;
             }
             return true;
@@ -272,16 +278,16 @@ namespace CursedScraps.Patches
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DiscardHeldObject))]
-		[HarmonyPostfix]
-		private static void PostDropObject(ref PlayerControllerB __instance)
-		{
-			if (__instance.currentlyHeldObjectServer != null
-				&& !GetCurseEffect(ref __instance.currentlyHeldObjectServer).Equals(Constants.CAPTIVE)
-				&& activeCurses.Contains(Constants.ERRANT))
-			{
-				TeleportPlayer(ref __instance);
-			}
-		}
+        [HarmonyPostfix]
+        private static void PostDropObject(ref PlayerControllerB __instance)
+        {
+            if (__instance.currentlyHeldObjectServer != null
+                && !GetCurseEffect(ref __instance.currentlyHeldObjectServer).Equals(Constants.CAPTIVE)
+                && activeCurses.Contains(Constants.ERRANT))
+            {
+                TeleportPlayer(ref __instance);
+            }
+        }
 
         [HarmonyPatch(typeof(PlayerControllerB), "UpdatePlayerPositionClientRpc")]
         [HarmonyPostfix]
@@ -302,7 +308,7 @@ namespace CursedScraps.Patches
                         SwitchPlayerCamera(ref switchedPlayer, false);
                     }
 
-                    if (__instance == GameNetworkManager.Instance.localPlayerController && !HasCursedScrap(ref __instance))
+                    if (__instance == GameNetworkManager.Instance.localPlayerController)
                     {
                         RemoveAllLocalEffects();
                     }
@@ -437,6 +443,9 @@ namespace CursedScraps.Patches
                         break;
                     case Constants.SHADOW:
                         AddActiveCurse(Constants.SHADOW, enable);
+                        break;
+                    case Constants.EXPLORATION:
+                        ApplyExploration(enable);
                         break;
                     default:
                         break;
@@ -671,6 +680,16 @@ namespace CursedScraps.Patches
             }
         }
 
+        internal static void ApplyExploration(bool enable)
+        {
+            // A faire avant AddActiveCurse pour ne pas effectuer ce code à chaque fois que l'objet avec cette malédiction est ramassé
+            if (enable && !activeCurses.Contains(Constants.EXPLORATION))
+            {
+                HUDManagerPatch.ChangeRandomEntranceId(!GameNetworkManager.Instance.localPlayerController.isInsideFactory);
+            }
+            AddActiveCurse(Constants.EXPLORATION, enable);
+        }
+
         private static IEnumerator PlayerDoubleJump(PlayerControllerB player)
         {
             doubleJump = true;
@@ -687,19 +706,19 @@ namespace CursedScraps.Patches
         }
 
         private static void TeleportPlayer(ref PlayerControllerB player)
-		{
-			if (!player.isInHangarShipRoom)
-			{
-				Vector3 position = RoundManager.Instance.insideAINodes[UnityEngine.Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
-				position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
-				player.isInElevator = false;
-				player.isInHangarShipRoom = false;
-				player.isInsideFactory = true;
-				player.averageVelocity = 0f;
-				player.velocityLastFrame = Vector3.zero;
-				player.TeleportPlayer(position);
-			}
-		}
+        {
+            if (!player.isInHangarShipRoom)
+            {
+                Vector3 position = RoundManager.Instance.insideAINodes[UnityEngine.Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
+                position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
+                player.isInElevator = false;
+                player.isInHangarShipRoom = false;
+                player.isInsideFactory = true;
+                player.averageVelocity = 0f;
+                player.velocityLastFrame = Vector3.zero;
+                player.TeleportPlayer(position);
+            }
+        }
 
         internal static void Paralyze(ref PlayerControllerB __instance)
         {
