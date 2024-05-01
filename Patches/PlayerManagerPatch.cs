@@ -281,8 +281,9 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void PostDropObject(ref PlayerControllerB __instance)
         {
-            if (__instance.currentlyHeldObjectServer != null
-                && !GetCurseEffect(ref __instance.currentlyHeldObjectServer).Equals(Constants.CAPTIVE)
+            //After the discarded items, currentlyHeldObjectServer is null.Teleportation can be triggered both when dropping and picking up cursed items
+            if (__instance.currentlyHeldObjectServer == null
+                && !(GetCurseEffect(ref __instance.currentlyHeldObjectServer) ?? "").Equals(Constants.CAPTIVE)
                 && activeCurses.Contains(Constants.ERRANT))
             {
                 TeleportPlayer(ref __instance);
@@ -647,6 +648,11 @@ namespace CursedScraps.Patches
                 if (savedMasterVolume != 0f)
                 {
                     IngamePlayerSettings.Instance.ChangeMasterVolume((int)(savedMasterVolume * 100));
+                    if (IngamePlayerSettings.Instance.settings.masterVolume == 0)
+                    {
+                        //Make sure to restore the volume when the curse is removed
+                        IngamePlayerSettings.Instance.settings.masterVolume = savedMasterVolume;
+                    }
                 }
             }
         }
@@ -845,7 +851,11 @@ namespace CursedScraps.Patches
             foreach (string actionName in actionNames)
             {
                 if (enable && actionsBlockedBy.Count == 0) IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Enable();
-                else IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Disable();
+                else
+                {
+                    IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Disable();
+                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "SYNCHRONIZATION: Two people pick it up at the same time to move it.");
+                }
             }
         }
 
@@ -860,5 +870,50 @@ namespace CursedScraps.Patches
                 activeCurses.Remove(curseEffect);
             }
         }
+
+        //Detects ToggleMute and disables it when MUTE
+        public static void UDToggleMute(Harmony harmony)
+        {
+            if (Harmony.HasAnyPatches("quackandcheese.togglemute"))
+            {
+                var originalMethod = AccessTools.Method(Type.GetType("ToggleMute.ToggleMuteManager, ToggleMute"), "OnToggleMuteKeyPressed");
+                if (originalMethod != null)
+                {
+                    if (ConfigManager.globalPrevent.Value)
+                    {
+                        var emptyPatch = new HarmonyMethod(typeof(PlayerManagerPatch), nameof(PlayerManagerPatch.UDToggleMutePrefix));
+                        harmony.Patch(originalMethod, prefix: emptyPatch);
+                    }
+                }
+            }
+        }
+        // emptyPatch
+        public static bool UDToggleMutePrefix()
+        {
+            if (activeCurses.Contains(Constants.MUTE))
+            {
+                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        //Keep the curse effect in effect while adjusting the game Settings
+        [HarmonyPatch(typeof(IngamePlayerSettings), nameof(IngamePlayerSettings.SaveChangedSettings))]
+        [HarmonyPrefix]
+        private static bool PreventSaveSettings()
+        {
+            if (ConfigManager.globalPrevent.Value &&
+                ((activeCurses.Contains(Constants.MUTE)) || (activeCurses.Contains(Constants.DEAFNESS) && savedMasterVolume != 0f)))
+            {
+                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
+                return false;
+            }
+            return true;
+        }
+        
     }
 }
