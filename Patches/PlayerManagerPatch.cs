@@ -116,28 +116,31 @@ namespace CursedScraps.Patches
         [HarmonyPrefix]
         private static bool PreventGrabObject(ref RaycastHit ___hit)
         {
-            GrabbableObject grabbedScrap = ___hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
-            string curseEffect = GetCurseEffect(ref grabbedScrap);
-            if (!string.IsNullOrEmpty(curseEffect))
+            GrabbableObject grabbedScrap = ___hit.collider?.transform.gameObject.GetComponent<GrabbableObject>();
+            if (grabbedScrap != null)
             {
-                if (IsCoopCursed(curseEffect) || (communicationPlayer != null && !curseEffect.Equals(Constants.COMM_REFLECTION)))
+                string curseEffect = GetCurseEffect(ref grabbedScrap);
+                if (!string.IsNullOrEmpty(curseEffect))
                 {
-                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You already have an active coop curse.");
-                    return false;
-                }
-
-                if (curseEffect.Equals(Constants.COMM_REFLECTION))
-                {
-                    GrabbableObject scrap;
-                    if (communicationPlayer == null)
+                    if (IsCoopCursed(curseEffect) || (communicationPlayer != null && !curseEffect.Equals(Constants.COMM_REFLECTION)))
                     {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You are not the selected player.");
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You already have an active coop curse.");
                         return false;
                     }
-                    else if ((scrap = ItemManagerPatch.GetCloneScrapFromCurse(grabbedScrap, Constants.COMM_CORE, false)) != null && !scrap.isHeld)
+
+                    if (curseEffect.Equals(Constants.COMM_REFLECTION))
                     {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "The core scrap has to be held for that.");
-                        return false;
+                        GrabbableObject scrap;
+                        if (communicationPlayer == null)
+                        {
+                            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You are not the selected player.");
+                            return false;
+                        }
+                        else if ((scrap = ItemManagerPatch.GetCloneScrapFromCurse(grabbedScrap, Constants.COMM_CORE, false)) != null && !scrap.isHeld)
+                        {
+                            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "The core scrap has to be held for that.");
+                            return false;
+                        }
                     }
                 }
             }
