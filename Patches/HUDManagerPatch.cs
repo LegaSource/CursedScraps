@@ -12,7 +12,28 @@ namespace CursedScraps.Patches
 {
     internal class HUDManagerPatch
     {
+        private static GameObject chrono;
+        private static TextMeshProUGUI chronoText;
+        internal static bool forceEndChrono = false;
         internal static int allowedEntrance;
+        public static int timeOut = 5;
+
+        [HarmonyPatch(typeof(HUDManager), "Start")]
+        [HarmonyPostfix]
+        private static void Start(HUDManager __instance)
+        {
+            if (chrono == null)
+            {
+                chrono = UnityEngine.Object.Instantiate(__instance.weightCounterAnimator.gameObject, __instance.weightCounterAnimator.transform.parent);
+                chrono.transform.localPosition += new Vector3(-85f, 185f, 0f);
+                chrono.name = "ChronoUI";
+
+                chronoText = chrono.GetComponentInChildren<TextMeshProUGUI>();
+                chronoText.text = "";
+                chronoText.alignment = TextAlignmentOptions.BottomLeft;
+                chronoText.name = "Chrono";
+            }
+        }
 
         [HarmonyPatch(typeof(HUDManager), "UpdateScanNodes")]
         [HarmonyPostfix]
@@ -33,7 +54,7 @@ namespace CursedScraps.Patches
                             TextMeshProUGUI[] scanElementText = element.gameObject.GetComponentsInChildren<TextMeshProUGUI>();
                             if (scanElementText != null && scanElementText.Length > 1)
                             {
-                                if (scanElementText[1].text != null && scanElementText[0].text.ToString().Equals(Constants.CURSE_PILLS))
+                                if (scanElementText[0].text != null && scanElementText[0].text.ToString().Equals(Constants.CURSE_PILLS))
                                 {
                                     // nodeType = 0 --> scan bleu
                                     element.GetComponent<Animator>().SetInteger("colorNumber", 0);
@@ -74,7 +95,7 @@ namespace CursedScraps.Patches
         {
             if (PlayerManagerPatch.activeCurses.Count > 0 && PlayerManagerPatch.activeCurses.Contains(Constants.BLURRY))
             {
-                ___drunknessFilter.weight = 1f;
+                ___drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
             }
         }
 
@@ -116,32 +137,45 @@ namespace CursedScraps.Patches
                 .ToList();
 
             EntranceTeleport entrance = entrances[new System.Random().Next(entrances.Count)];
-
             if (((Component)(object)entrance).GetComponentInChildren<ScanNodeProperties>() == null)
             {
-                GameObject gameObject = new GameObject("ScanNode", typeof(ScanNodeProperties), typeof(BoxCollider));
-                gameObject.layer = LayerMask.NameToLayer("ScanNode");
-                gameObject.transform.localScale = Vector3.one * 1f;
-                gameObject.transform.parent = entrance.gameObject.transform;
-                gameObject.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-                ScanNodeProperties component = gameObject.GetComponent<ScanNodeProperties>();
-                // Scan bleu
-                component.nodeType = 0;
-                component.minRange = 1;
-                component.maxRange = 9999;
-                component.headerText = (entrance.entranceId == 0 ? "Main entrance" : "Fire Exit");
-                component.requiresLineOfSight = false;
+                CreateScanNode(entrance.gameObject.transform, entrance.entranceId == 0 ? "Main entrance" : "Fire Exit");
             }
-
-            HUDManager.Instance.StartCoroutine(ScanCoroutine(entrance));
-            
+            HUDManager.Instance.StartCoroutine(ScanExplorationCoroutine(entrance));
             allowedEntrance = entrance.entranceId;
         }
 
-        private static IEnumerator ScanCoroutine(EntranceTeleport entrance)
+        internal static void CreateScanNode(Transform parent, string headerText)
+        {
+            GameObject gameObject = new GameObject("ScanNode", typeof(ScanNodeProperties), typeof(BoxCollider));
+            gameObject.layer = LayerMask.NameToLayer("ScanNode");
+            gameObject.transform.localScale = Vector3.one * 1f;
+            gameObject.transform.parent = parent;
+            gameObject.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            ScanNodeProperties component = gameObject.GetComponent<ScanNodeProperties>();
+            // Scan bleu
+            component.nodeType = 0;
+            component.minRange = 1;
+            component.maxRange = int.MaxValue;
+            component.headerText = headerText;
+            component.requiresLineOfSight = false;
+        }
+
+        private static IEnumerator ScanExplorationCoroutine(EntranceTeleport entrance)
+        {
+            // Forcer l'apparition du scan à l'écran si le joueur regarde dans la direction de la porte
+            ScanNodeProperties node = ((Component)(object)entrance).GetComponentInChildren<ScanNodeProperties>();
+            ForceAddNodeOnScreen(ref node);
+
+            yield return new WaitForSeconds(ConfigManager.explorationTime.Value);
+
+            // Suppression du scan de la porte et de la possibilité de la scanner
+            DestroyScanNode(ref node);
+        }
+
+        private static void ForceAddNodeOnScreen(ref ScanNodeProperties node)
         {
             List<ScanNodeProperties> nodesOnScreen = (List<ScanNodeProperties>)AccessTools.Field(typeof(HUDManager), "nodesOnScreen").GetValue(HUDManager.Instance);
-            ScanNodeProperties node = ((Component)(object)entrance).GetComponentInChildren<ScanNodeProperties>();
             if (node != null)
             {
                 if (!nodesOnScreen.Contains(node))
@@ -151,9 +185,11 @@ namespace CursedScraps.Patches
                 MethodInfo methodInfo = typeof(HUDManager).GetMethod("AssignNodeToUIElement", BindingFlags.NonPublic | BindingFlags.Instance);
                 methodInfo?.Invoke(HUDManager.Instance, new object[] { node });
             }
+        }
 
-            yield return new WaitForSeconds(ConfigManager.explorationTime.Value);
-
+        internal static void DestroyScanNode(ref ScanNodeProperties node)
+        {
+            List<ScanNodeProperties> nodesOnScreen = (List<ScanNodeProperties>)AccessTools.Field(typeof(HUDManager), "nodesOnScreen").GetValue(HUDManager.Instance);
             if (nodesOnScreen.Contains(node))
             {
                 Dictionary<RectTransform, ScanNodeProperties> scanNodes = (Dictionary<RectTransform, ScanNodeProperties>)AccessTools.Field(typeof(HUDManager), "scanNodes").GetValue(HUDManager.Instance);
@@ -166,7 +202,65 @@ namespace CursedScraps.Patches
                     }
                 }
             }
-            UnityEngine.Object.Destroy(node.gameObject);
+            UnityEngine.Object.Destroy(node);
+        }
+
+        internal static IEnumerator StartTrackedScrapCoroutine()
+        {
+            int timePassed = 0;
+            while (PlayerManagerPatch.trackedScrap == null)
+            {
+                yield return new WaitForSeconds(1f);
+                timePassed++;
+
+                if (timePassed >= timeOut) break;
+            }
+
+            while (IsTrackedEnded() != null)
+            {
+                yield return new WaitForSeconds(1f);
+            }
+        }
+
+        private static GrabbableObject IsTrackedEnded()
+        {
+            if (PlayerManagerPatch.communicationPlayer != null && PlayerManagerPatch.trackedScrap != null)
+            {
+                chronoText.text = Math.Round(Vector3.Distance(PlayerManagerPatch.communicationPlayer.transform.position, PlayerManagerPatch.trackedScrap.transform.position), 1).ToString();
+            }
+            else
+            {
+                chronoText.text = "";
+            }
+            return PlayerManagerPatch.trackedScrap;
+        }
+
+        internal static IEnumerator StartChronoCoroutine(int seconds)
+        {
+            while (!IsChronoEnded(seconds))
+            {
+                seconds--;
+                yield return new WaitForSeconds(1f);
+            }
+        }
+
+        private static bool IsChronoEnded(int totalSeconds)
+        {
+            int minutes = (int)Math.Floor(totalSeconds / 60.0);
+            int seconds = (int)Math.Floor(totalSeconds % 60.0);
+
+            chronoText.text = $"{minutes:D2}:{seconds:D2}";
+
+            if (forceEndChrono || (minutes == 0 && seconds == 0))
+            {
+                if (!forceEndChrono)
+                {
+                    GameNetworkManager.Instance.localPlayerController.KillPlayer(Vector3.zero, spawnBody: true, CauseOfDeath.Unknown);
+                }
+                chronoText.text = "";
+                return true;
+            }
+            return false;
         }
     }
 }

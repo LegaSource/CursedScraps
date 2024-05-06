@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using System;
 using Unity.Netcode;
 using System.Collections.Generic;
+using DunGen;
 
 namespace CursedScraps.Patches
 {
@@ -16,14 +17,21 @@ namespace CursedScraps.Patches
     {
         internal static int curseCounter = 0;
         internal static List<string> activeCurses = new List<string>();
-        private static List<string> actionsBlockedBy = new List<string>();
+        internal static List<string> actionsBlockedBy = new List<string>();
         private static GrabbableObject lastGrabbedObject;
         private static List<PlayerControllerB> immunedPlayers = new List<PlayerControllerB>();
+        private static bool hasCoopCurseActive = false;
+        // DEAFNESS
         private static float savedMasterVolume = 0f;
+        // SYNCHRONIZATION
         private static PlayerControllerB switchedPlayer;
+        // DIMINUTIVE
         private static Vector3 originalScale;
         private static readonly Vector3 DIMINUTIVE_SCALE = new Vector3(0.2f, 0.2f, 0.2f);
         private static bool doubleJump = false;
+        // COMMUNICATION
+        internal static PlayerControllerB communicationPlayer;
+        internal static GrabbableObject trackedScrap;
 
         [HarmonyPatch(typeof(PlayerControllerB), "Update")]
         [HarmonyPostfix]
@@ -104,6 +112,38 @@ namespace CursedScraps.Patches
             return true;
         }
 
+        [HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject")]
+        [HarmonyPrefix]
+        private static bool PreventGrabObject(ref RaycastHit ___hit)
+        {
+            GrabbableObject grabbedScrap = ___hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
+            string curseEffect = GetCurseEffect(ref grabbedScrap);
+            if (!string.IsNullOrEmpty(curseEffect))
+            {
+                if (IsCoopCursed(curseEffect) || (communicationPlayer != null && !curseEffect.Equals(Constants.COMM_REFLECTION)))
+                {
+                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You already have an active coop curse.");
+                    return false;
+                }
+
+                if (curseEffect.Equals(Constants.COMM_REFLECTION))
+                {
+                    GrabbableObject scrap;
+                    if (communicationPlayer == null)
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You are not the selected player.");
+                        return false;
+                    }
+                    else if ((scrap = ItemManagerPatch.GetCloneScrapFromCurse(grabbedScrap, Constants.COMM_CORE, false)) != null && !scrap.isHeld)
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "The core scrap has to be held for that.");
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         [HarmonyPatch(typeof(PlayerControllerB), "GrabObjectClientRpc")]
         [HarmonyPrefix]
         private static void PreGrabObjectClient(ref bool grabValidated, ref NetworkObjectReference grabbedObject, ref PlayerControllerB __instance)
@@ -151,33 +191,12 @@ namespace CursedScraps.Patches
                 {
                     if (!immunedPlayers.Contains(__instance))
                     {
-                        // Fait le plus tôt possible pour être sûr de stocker la bonne position
-                        Vector3 position = grabbedScrap.transform.position;
                         curseCounter = 0;
                         if (curseEffect.Equals(Constants.SYNCHRONIZATION))
                         {
-                            if (GameNetworkManager.Instance.localPlayerController.IsServer || GameNetworkManager.Instance.localPlayerController.IsHost)
-                            {
-                                try
-                                {
-                                    GameObject gameObject = Instantiate(grabbedScrap.itemProperties.spawnPrefab, grabbedScrap.transform.position, Quaternion.identity, StartOfRound.Instance.propsContainer);
-                                    GrabbableObject scrap = gameObject.GetComponent<GrabbableObject>();
-                                    scrap.fallTime = 0f;
-                                    gameObject.GetComponent<NetworkObject>().Spawn();
-                                }
-                                catch (Exception arg)
-                                {
-                                    Debug.LogError($"Error in SpawnCursedScraps: {arg}");
-                                }
-                            }
-                            GameNetworkManager.Instance.localPlayerController.StartCoroutine(ItemManagerPatch.ChangeReflectionScrapCoroutine(grabbedScrap, position));
-
-                            ScanNodeProperties componentInChildren = ((Component)(object)grabbedScrap).gameObject.GetComponentInChildren<ScanNodeProperties>();
-                            if (componentInChildren != null)
-                            {
-                                componentInChildren.subText = $"Value: ${componentInChildren.scrapValue}" + " \nCurse: " + Constants.SYNC_CORE;
-                            }
-
+                            Vector3 position = grabbedScrap.transform.position;
+                            ItemManagerPatch.CloneScrap(ref grabbedScrap, Constants.SYNC_CORE, Constants.SYNC_REFLECTION, ref position, ref __instance);
+                            // Immobiliser le joueur
                             if (GameNetworkManager.Instance.localPlayerController == __instance)
                             {
                                 EnablePlayerActions(Constants.SYNCHRONIZATION, false);
@@ -201,6 +220,14 @@ namespace CursedScraps.Patches
                         {
                             ApplyDiminutive(true, ref __instance);
                         }
+                        else if (curseEffect.Equals(Constants.COMMUNICATION) || curseEffect.Equals(Constants.COMM_CORE))
+                        {
+                            ApplyCommunicationFirstPart(ref grabbedScrap, ref __instance, ref curseEffect);
+                        }
+                        else if (curseEffect.Equals(Constants.COMM_REFLECTION))
+                        {
+                            ApplyCommunicationSecondPart(ref __instance);
+                        }
                         // Malédictions locales
                         else if (__instance == GameNetworkManager.Instance.localPlayerController)
                         {
@@ -219,7 +246,7 @@ namespace CursedScraps.Patches
             }
         }
 
-        [HarmonyPatch(typeof(IngamePlayerSettings), nameof(IngamePlayerSettings.DiscardChangedSettings))]
+        [HarmonyPatch(typeof(IngamePlayerSettings), nameof(IngamePlayerSettings.UpdateGameToMatchSettings))]
         [HarmonyPrefix]
         private static bool PreventRemoveWhenExitConfigs()
         {
@@ -235,8 +262,8 @@ namespace CursedScraps.Patches
         private static bool PreventUpdateSettings(SettingsOptionType optionType)
         {
             if (ConfigManager.globalPrevent.Value &&
-                ((activeCurses.Contains(Constants.MUTE) && optionType == SettingsOptionType.MicEnabled)
-                 || (activeCurses.Contains(Constants.DEAFNESS) && optionType == SettingsOptionType.MasterVolume)))
+                ((activeCurses.Contains(Constants.MUTE) && (optionType == SettingsOptionType.MicEnabled || optionType == SettingsOptionType.MicDevice || optionType == SettingsOptionType.MicPushToTalk))
+                 || (activeCurses.Contains(Constants.DEAFNESS) && (optionType == SettingsOptionType.MasterVolume || optionType == SettingsOptionType.MicDevice))))
             {
                 HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
                 return false;
@@ -266,13 +293,39 @@ namespace CursedScraps.Patches
             }
 
             string curseEffectHeld = GetCurseEffect(ref __instance.currentlyHeldObjectServer);
-            if (!string.IsNullOrEmpty(curseEffectHeld) && curseEffectHeld == Constants.CAPTIVE && !__instance.isInHangarShipRoom)
+            if (!string.IsNullOrEmpty(curseEffectHeld))
             {
-                return false;
+                if ((curseEffectHeld.Equals(Constants.CAPTIVE) || IsCoopCursed(curseEffectHeld))
+                    && !__instance.isInHangarShipRoom)
+                {
+                    return false;
+                }
+                // S'il s'agit du joueur immobilisé, retirer la malédiction
+                else if (activeCurses.Contains(Constants.COMMUNICATION)
+                    && curseEffectHeld.Equals(Constants.COMM_CORE)
+                    && actionsBlockedBy.Contains(Constants.COMMUNICATION))
+                {
+                    DesactiveCommunication(ref __instance);
+                }
+                else if (!activeCurses.Contains(Constants.SYNCHRONIZATION) && (curseEffectHeld == Constants.SYNC_REFLECTION || curseEffectHeld == Constants.SYNC_CORE))
+                {
+                    EnablePlayerActions(Constants.SYNCHRONIZATION, true);
+                }
+                else if (!activeCurses.Contains(Constants.COMMUNICATION) && (curseEffectHeld == Constants.COMM_REFLECTION || curseEffectHeld == Constants.COMM_CORE))
+                {
+                    EnablePlayerActions(Constants.COMMUNICATION, true);
+                }
             }
-            else if (!activeCurses.Contains(Constants.SYNCHRONIZATION) && !string.IsNullOrEmpty(curseEffectHeld) && (curseEffectHeld == Constants.SYNC_REFLECTION || curseEffectHeld == Constants.SYNC_CORE))
+            return true;
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), "ThrowObjectClientRpc")]
+        [HarmonyPrefix]
+        private static bool PreDropObjectSync(ref PlayerControllerB __instance)
+        {
+            if (!activeCurses.Contains(Constants.COMMUNICATION) && communicationPlayer != null && __instance == communicationPlayer)
             {
-                EnablePlayerActions(Constants.SYNCHRONIZATION, true);
+                DesactiveCommunication(ref GameNetworkManager.Instance.localPlayerController);
             }
             return true;
         }
@@ -281,11 +334,14 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void PostDropObject(ref PlayerControllerB __instance)
         {
-            if (__instance.currentlyHeldObjectServer != null
-                && !GetCurseEffect(ref __instance.currentlyHeldObjectServer).Equals(Constants.CAPTIVE)
-                && activeCurses.Contains(Constants.ERRANT))
+            string curseEffectHeld = GetCurseEffect(ref __instance.currentlyHeldObjectServer);
+            if (!string.IsNullOrEmpty(curseEffectHeld))
             {
-                TeleportPlayer(ref __instance);
+                if (!curseEffectHeld.Equals(Constants.CAPTIVE)
+                    && activeCurses.Contains(Constants.ERRANT))
+                {
+                    TeleportPlayer(ref __instance);
+                }
             }
         }
 
@@ -297,16 +353,8 @@ namespace CursedScraps.Patches
             {
                 if (activeCurses.Count > 0)
                 {
-                    if (activeCurses.Contains(Constants.SYNCHRONIZATION)
-                        && ItemManagerPatch.scrapSyncToDestroy != null
-                        && switchedPlayer != null
-                        && (__instance == GameNetworkManager.Instance.localPlayerController || __instance == switchedPlayer))
-                    {
-                        ItemManagerPatch.scrapSyncToDestroy.DestroyObjectInHand(ItemManagerPatch.scrapSyncToDestroy.playerHeldBy);
-                        ItemManagerPatch.scrapSyncToDestroy = null;
-                        AddActiveCurse(Constants.SYNCHRONIZATION, false);
-                        SwitchPlayerCamera(ref switchedPlayer, false);
-                    }
+                    RemoveCoopEffect(Constants.SYNCHRONIZATION, ref __instance, ref switchedPlayer);
+                    RemoveCoopEffect(Constants.COMMUNICATION, ref __instance, ref communicationPlayer);
 
                     if (__instance == GameNetworkManager.Instance.localPlayerController)
                     {
@@ -380,17 +428,43 @@ namespace CursedScraps.Patches
             PlayerControllerB player = __instance.playersManager.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
             if (activeCurses.Count > 0)
             {
-                if (activeCurses.Contains(Constants.SYNCHRONIZATION)
+                /*if (activeCurses.Contains(Constants.SYNCHRONIZATION)
                     && switchedPlayer != null
                     && (player == GameNetworkManager.Instance.localPlayerController || player == switchedPlayer))
                 {
-                    if (player == switchedPlayer && HasCursedScrap(ref GameNetworkManager.Instance.localPlayerController, new string[] { Constants.SYNC_CORE, Constants.SYNC_REFLECTION }))
+                    if (player == switchedPlayer && HasCursedScrap(new string[] { Constants.SYNC_CORE, Constants.SYNC_REFLECTION }))
                     {
                         EnablePlayerActions(Constants.SYNCHRONIZATION, false);
                     }
                     AddActiveCurse(Constants.SYNCHRONIZATION, false);
                     SwitchPlayerCamera(ref switchedPlayer, false);
                 }
+
+                if (activeCurses.Contains(Constants.COMMUNICATION)
+                    && communicationPlayer != null
+                    && (player == GameNetworkManager.Instance.localPlayerController || player == communicationPlayer))
+                {
+                    if (player == communicationPlayer)
+                    {
+                        // Forcer l'autre partie de l'objet à être lâchée par le joueur en vie
+                        GetCursedScrap(new string[] { Constants.COMM_CORE, Constants.COMM_REFLECTION })?.DiscardItemOnClient();
+                    }
+
+                    // Si joueur qui a déclenché la malédiction, supprimer la capacité de scanner le joueur sélectionné et l'objet à récupérer
+                    GrabbableObject scrap = GetCursedScrap(new string[] { Constants.COMM_CORE });
+                    if (scrap != null)
+                    {
+                        ScanNodeProperties playerNode = ((Component)(object)communicationPlayer).GetComponentInChildren<ScanNodeProperties>();
+                        if (playerNode != null)
+                        {
+                            HUDManagerPatch.DestroyScanNode(ref playerNode);
+                        }
+                    }
+                    AddActiveCurse(Constants.COMMUNICATION, false);
+                    communicationPlayer = null;
+                    trackedScrap = null;
+                }*/
+                DesactiveAllCoopEffects(ref player);
 
                 if (player == GameNetworkManager.Instance.localPlayerController)
                 {
@@ -470,13 +544,13 @@ namespace CursedScraps.Patches
             return null;
         }
 
-        private static bool HasCursedScrap(ref PlayerControllerB player, string[] curses = null)
+        private static bool HasCursedScrap(string[] curses = null)
         {
-            for (int i = 0; i < player.ItemSlots.Length; i++)
+            for (int i = 0; i < GameNetworkManager.Instance.localPlayerController.ItemSlots.Length; i++)
             {
-                if (player.ItemSlots[i] != null)
+                if (GameNetworkManager.Instance.localPlayerController.ItemSlots[i] != null)
                 {
-                    string curseEffect = GetCurseEffect(ref player.ItemSlots[i]);
+                    string curseEffect = GetCurseEffect(ref GameNetworkManager.Instance.localPlayerController.ItemSlots[i]);
                     if (!string.IsNullOrEmpty(curseEffect))
                     {
                         if (curses == null || (curses != null && curses.Contains(curseEffect)))
@@ -487,6 +561,51 @@ namespace CursedScraps.Patches
                 }
             }
             return false;
+        }
+
+        private static bool IsCoopCursed(string curseEffect)
+        {
+            if (hasCoopCurseActive
+                && (curseEffect.Equals(Constants.SYNCHRONIZATION)
+                    || curseEffect.Equals(Constants.SYNC_CORE)
+                    || curseEffect.Equals(Constants.SYNC_REFLECTION)
+                    || curseEffect.Equals(Constants.COMMUNICATION)
+                    // S'il s'agit du joueur immobilisé, pouvoir retirer la malédiction
+                    || (curseEffect.Equals(Constants.COMM_CORE) && !actionsBlockedBy.Contains(Constants.COMMUNICATION))
+                    || curseEffect.Equals(Constants.COMM_REFLECTION)))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static void DesactiveAllCoopEffects(ref PlayerControllerB player)
+        {
+            DesactiveSynchronization(ref player);
+            DesactiveCommunication(ref player);
+        }
+
+        private static void RemoveCoopEffect(string curseEffect, ref PlayerControllerB movingPlayer, ref PlayerControllerB coopPlayer)
+        {
+            if (activeCurses.Contains(curseEffect)
+                && ItemManagerPatch.scrapCoopToDestroy != null
+                && coopPlayer != null
+                && (movingPlayer == GameNetworkManager.Instance.localPlayerController || movingPlayer == coopPlayer))
+            {
+                ItemManagerPatch.scrapCoopToDestroy.DestroyObjectInHand(ItemManagerPatch.scrapCoopToDestroy.playerHeldBy);
+                ItemManagerPatch.scrapCoopToDestroy = null;
+                AddActiveCurse(curseEffect, false);
+
+                if (curseEffect.Equals(Constants.SYNCHRONIZATION))
+                {
+                    SwitchPlayerCamera(ref switchedPlayer, false);
+                }
+                else if (curseEffect.Equals(Constants.COMMUNICATION))
+                {
+                    communicationPlayer = null;
+                    HUDManagerPatch.forceEndChrono = true;
+                }
+            }
         }
 
         private static void RemoveAllLocalEffects()
@@ -669,14 +788,14 @@ namespace CursedScraps.Patches
             {
                 originalScale = player.transform.localScale;
                 player.transform.localScale = DIMINUTIVE_SCALE;
-                player.movementSpeed /= 3;
-                player.grabDistance /= 4;
+                player.movementSpeed /= ConfigManager.diminutiveSpeed.Value;
+                player.grabDistance /= ConfigManager.diminutiveGrab.Value;
             }
             else
             {
                 player.transform.localScale = originalScale;
-                player.movementSpeed *= 3;
-                player.grabDistance *= 4;
+                player.movementSpeed *= ConfigManager.diminutiveSpeed.Value;
+                player.grabDistance *= ConfigManager.diminutiveGrab.Value;
             }
         }
 
@@ -688,6 +807,97 @@ namespace CursedScraps.Patches
                 HUDManagerPatch.ChangeRandomEntranceId(!GameNetworkManager.Instance.localPlayerController.isInsideFactory);
             }
             AddActiveCurse(Constants.EXPLORATION, enable);
+        }
+
+        private static void ApplyCommunicationFirstPart(ref GrabbableObject grabbedScrap, ref PlayerControllerB player, ref string curseEffect)
+        {
+            if (curseEffect.Equals(Constants.COMMUNICATION))
+            {
+                Vector3 position = ItemManagerPatch.GetFurthestPositionScrapSpawn(player.transform.position, ref grabbedScrap.itemProperties);
+                ItemManagerPatch.CloneScrap(ref grabbedScrap, Constants.COMM_CORE, Constants.COMM_REFLECTION, ref position, ref player);
+            }
+            else if (trackedScrap == null && curseEffect.Equals(Constants.COMM_CORE) && GameNetworkManager.Instance.localPlayerController == player)
+            {
+                trackedScrap = ItemManagerPatch.GetCloneScrapFromCurse(grabbedScrap, Constants.COMM_REFLECTION, false);
+            }
+
+            // Sélection du joueur devant récupérer la seconde partie de l'objet
+            PlayerControllerB grabbingPlayer = player;
+            PlayerControllerB selectedPlayer = StartOfRound.Instance.allPlayerScripts
+                .Where(p => p.isPlayerControlled && !p.isPlayerDead && p != grabbingPlayer)
+                .OrderBy(p => Vector3.Distance(p.transform.position, grabbingPlayer.transform.position))
+                .FirstOrDefault();
+
+            if (selectedPlayer != null)
+            {
+                if (GameNetworkManager.Instance.localPlayerController == selectedPlayer)
+                {
+                    // Activer la malédiction dans la deuxième partie pour ce joueur => pour qu'il soit capable de récupérer la deuxième partie de l'objet
+                    communicationPlayer = player;
+                    HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, "A player has picked the first part of a cursed object, and you've been chosen to find the second part. Find it to set him free!");
+                }
+                else if (GameNetworkManager.Instance.localPlayerController == player)
+                {
+                    AddActiveCurse(Constants.COMMUNICATION, true);
+                    communicationPlayer = selectedPlayer;
+
+                    // Immobiliser le joueur
+                    EnablePlayerActions(Constants.COMMUNICATION, false);
+
+                    Debug.Log("StartTrackedScrapCoroutine");
+                    HUDManager.Instance.StartCoroutine(HUDManagerPatch.StartTrackedScrapCoroutine());
+                }
+            }
+            else
+            {
+                if (GameNetworkManager.Instance.localPlayerController == player)
+                {
+                    HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, "No player could be found to share this curse with you.");
+                    // Immobiliser le joueur
+                    EnablePlayerActions(Constants.COMMUNICATION, false);
+                }
+            }
+        }
+
+        private static void ApplyCommunicationSecondPart(ref PlayerControllerB player)
+        {
+            if (activeCurses.Contains(Constants.COMMUNICATION) || player == GameNetworkManager.Instance.localPlayerController)
+            {
+                // Joueur immobilisé
+                if (player != GameNetworkManager.Instance.localPlayerController)
+                {
+                    // Le joueur n'est plus immobilisé
+                    EnablePlayerActions(Constants.COMMUNICATION, true);
+                }
+                else
+                {
+                    AddActiveCurse(Constants.COMMUNICATION, true);
+                }
+                trackedScrap = null;
+                HUDManagerPatch.forceEndChrono = false;
+                HUDManager.Instance.StartCoroutine(HUDManagerPatch.StartChronoCoroutine(ConfigManager.communicationChrono.Value));
+            }
+        }
+
+        private static void DesactiveCommunication(ref PlayerControllerB player)
+        {
+            if (activeCurses.Contains(Constants.COMMUNICATION)
+                && communicationPlayer != null
+                && (player == GameNetworkManager.Instance.localPlayerController || player == communicationPlayer))
+            {
+                if (player == communicationPlayer)
+                {
+                    GameNetworkManager.Instance.localPlayerController.DropAllHeldItemsAndSync();
+                }
+
+                // Le joueur n'est plus immobilisé
+                EnablePlayerActions(Constants.COMMUNICATION, true);
+
+                AddActiveCurse(Constants.COMMUNICATION, false);
+                communicationPlayer = null;
+                trackedScrap = null;
+                HUDManagerPatch.forceEndChrono = true;
+            }
         }
 
         private static IEnumerator PlayerDoubleJump(PlayerControllerB player)
@@ -760,6 +970,21 @@ namespace CursedScraps.Patches
             return false;
         }
 
+        private static void DesactiveSynchronization(ref PlayerControllerB player)
+        {
+            if (activeCurses.Contains(Constants.SYNCHRONIZATION)
+                && switchedPlayer != null
+                && (player == GameNetworkManager.Instance.localPlayerController || player == switchedPlayer))
+            {
+                if (player == switchedPlayer && HasCursedScrap(new string[] { Constants.SYNC_CORE, Constants.SYNC_REFLECTION }))
+                {
+                    EnablePlayerActions(Constants.SYNCHRONIZATION, false);
+                }
+                AddActiveCurse(Constants.SYNCHRONIZATION, false);
+                SwitchPlayerCamera(ref switchedPlayer, false);
+            }
+        }
+
         private static bool HasCursedScrapClone(ref PlayerControllerB player, ref GrabbableObject clonedScrap, bool isLocalPlayerHolder)
         {
             string clonedScrapCurse = GetCurseEffect(ref clonedScrap);
@@ -790,21 +1015,10 @@ namespace CursedScraps.Patches
             GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.enabled = !isSwitched;
             player.thisPlayerModelArms.enabled = isSwitched;
 
-            Transform savedLocalVisorTargetPoint = GameNetworkManager.Instance.localPlayerController.localVisorTargetPoint;
-            GameNetworkManager.Instance.localPlayerController.localVisorTargetPoint = player.localVisorTargetPoint;
-            player.localVisorTargetPoint = savedLocalVisorTargetPoint;
-
-            Light saveNightVision = GameNetworkManager.Instance.localPlayerController.nightVision;
-            GameNetworkManager.Instance.localPlayerController.nightVision = player.nightVision;
-            player.nightVision = saveNightVision;
-
-            int saveLayerModel = GameNetworkManager.Instance.localPlayerController.thisPlayerModel.gameObject.layer;
-            GameNetworkManager.Instance.localPlayerController.thisPlayerModel.gameObject.layer = player.thisPlayerModel.gameObject.layer;
-            player.thisPlayerModel.gameObject.layer = saveLayerModel;
-
-            int saveLayerArms = GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.gameObject.layer;
-            GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.gameObject.layer = player.thisPlayerModelArms.gameObject.layer;
-            player.thisPlayerModelArms.gameObject.layer = saveLayerArms;
+            (player.localVisorTargetPoint, GameNetworkManager.Instance.localPlayerController.localVisorTargetPoint) = (GameNetworkManager.Instance.localPlayerController.localVisorTargetPoint, player.localVisorTargetPoint);
+            (player.nightVision, GameNetworkManager.Instance.localPlayerController.nightVision) = (GameNetworkManager.Instance.localPlayerController.nightVision, player.nightVision);
+            (player.thisPlayerModel.gameObject.layer, GameNetworkManager.Instance.localPlayerController.thisPlayerModel.gameObject.layer) = (GameNetworkManager.Instance.localPlayerController.thisPlayerModel.gameObject.layer, player.thisPlayerModel.gameObject.layer);
+            (player.thisPlayerModelArms.gameObject.layer, GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.gameObject.layer) = (GameNetworkManager.Instance.localPlayerController.thisPlayerModelArms.gameObject.layer, player.thisPlayerModelArms.gameObject.layer);
 
             if (isSwitched)
             {
@@ -853,10 +1067,18 @@ namespace CursedScraps.Patches
         {
             if (enable && !activeCurses.Contains(curseEffect))
             {
+                if (curseEffect.Equals(Constants.SYNCHRONIZATION) || curseEffect.Equals(Constants.COMMUNICATION))
+                {
+                    hasCoopCurseActive = true;
+                }
                 activeCurses.Add(curseEffect);
             }
             else if (!enable)
             {
+                if (curseEffect.Equals(Constants.SYNCHRONIZATION) || curseEffect.Equals(Constants.COMMUNICATION))
+                {
+                    hasCoopCurseActive = false;
+                }
                 activeCurses.Remove(curseEffect);
             }
         }

@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace CursedScraps.Patches
     internal class ItemManagerPatch
     {
         private static List<Item> consumableItems = new List<Item>();
-        public static GrabbableObject scrapSyncToDestroy;
+        public static GrabbableObject scrapCoopToDestroy;
         public static int timeOut = 5;
 
         /**
@@ -75,6 +76,9 @@ namespace CursedScraps.Patches
                     case Constants.EXPLORATION_VALUE:
                         curseEffect = new CurseEffect(Constants.EXPLORATION, ConfigManager.explorationMultiplier.Value, ConfigManager.explorationWeight.Value);
                         break;
+                    case Constants.COMMUNICATION_VALUE:
+                        curseEffect = new CurseEffect(Constants.COMMUNICATION, ConfigManager.communicationMultiplier.Value, ConfigManager.communicationWeight.Value);
+                        break;
                     default:
                         Debug.LogError($"Effect not managed in SetScrapValueOverride: {curseEffect.Name}");
                         break;
@@ -96,32 +100,8 @@ namespace CursedScraps.Patches
         [HarmonyPrefix]
         private static bool CollectScrap(ref GrabbableObject scrapObject)
         {
-            string curseEffect = PlayerManagerPatch.GetCurseEffect(ref scrapObject);
-            if (!string.IsNullOrEmpty(curseEffect) && curseEffect.Equals(Constants.SYNC_CORE))
-            {
-                GrabbableObject reflectionScrap = GetCloneScrapFromCurse(scrapObject, Constants.SYNC_REFLECTION);
-                if (reflectionScrap == null)
-                {
-                    return false;
-                }
-                else
-                {
-                    scrapSyncToDestroy = reflectionScrap;
-                }
-            }
-            else if (!string.IsNullOrEmpty(curseEffect) && curseEffect.Equals(Constants.SYNC_REFLECTION))
-            {
-                GrabbableObject coreScrap = GetCloneScrapFromCurse(scrapObject, Constants.SYNC_CORE);
-                if (coreScrap == null)
-                {
-                    return false;
-                }
-                else
-                {
-                    scrapSyncToDestroy = scrapObject;
-                    scrapObject = coreScrap;
-                }
-            }
+            if (!ProcessCoopScrap(ref scrapObject, Constants.SYNC_CORE, Constants.SYNC_REFLECTION)) return false;
+            if (!ProcessCoopScrap(ref scrapObject, Constants.COMM_CORE, Constants.COMM_REFLECTION)) return false;
             RemoveObjectEffect(ref scrapObject);
             return true;
         }
@@ -170,8 +150,9 @@ namespace CursedScraps.Patches
             {
                 if (spawnedScrap[i].TryGet(out var networkObject))
                 {
+                    string planetName = new string(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
                     GrabbableObject scrap = networkObject.GetComponent<GrabbableObject>();
-                    if (scrap != null && scrap.scrapValue > 0 && IsCursed())
+                    if (scrap != null && scrap.scrapValue > 0 && IsCursed(planetName))
                     {
                         if (i >= scrapValues.Length)
                         {
@@ -179,7 +160,7 @@ namespace CursedScraps.Patches
                             break;
                         }
 
-                        CurseEffect curseEffect = GetRandomCurseEffect();
+                        CurseEffect curseEffect = GetRandomCurseEffect(planetName);
                         if (curseEffect != null)
                         {
                             switch (curseEffect.Name)
@@ -219,6 +200,9 @@ namespace CursedScraps.Patches
                                     break;
                                 case Constants.EXPLORATION:
                                     scrapValues[i] = Constants.EXPLORATION_VALUE;
+                                    break;
+                                case Constants.COMMUNICATION:
+                                    scrapValues[i] = Constants.COMMUNICATION_VALUE;
                                     break;
                                 default:
                                     Debug.LogError($"Effect not managed in CurseScrapValue: {curseEffect.Name}");
@@ -271,6 +255,7 @@ namespace CursedScraps.Patches
                     RandomScrapSpawn randomScrapSpawn = listRandomScrapSpawn[indexRandomScrapSpawn];
                     if (randomScrapSpawn.spawnedItemsCopyPosition)
                     {
+                        randomScrapSpawn.spawnUsed = true;
                         listRandomScrapSpawn.RemoveAt(indexRandomScrapSpawn);
                     }
                     else
@@ -278,10 +263,8 @@ namespace CursedScraps.Patches
                         randomScrapSpawn.transform.position = __instance.GetRandomNavMeshPositionInBoxPredictable(randomScrapSpawn.transform.position, randomScrapSpawn.itemSpawnRange, __instance.navHit, __instance.AnomalyRandom) + Vector3.up * itemToSpawn.verticalOffset;
                     }
 
-                    GameObject gameObject = UnityEngine.Object.Instantiate(itemToSpawn.spawnPrefab, randomScrapSpawn.transform.position + Vector3.up * 0.5f, Quaternion.identity, StartOfRound.Instance.propsContainer);
-                    GrabbableObject scrap = gameObject.GetComponent<GrabbableObject>();
-                    scrap.fallTime = 0f;
-                    gameObject.GetComponent<NetworkObject>().Spawn();
+                    Vector3 position = randomScrapSpawn.transform.position + Vector3.up * 0.5f;
+                    SpawnScrap(ref itemToSpawn.spawnPrefab, ref position);
                 }
             }
             catch (Exception arg)
@@ -290,9 +273,27 @@ namespace CursedScraps.Patches
             }
         }
 
-        private static bool IsCursed()
+        internal static void SpawnScrap(ref GameObject spawnPrefab, ref Vector3 position)
         {
-            if (new System.Random().Next(1, 100) <= ConfigManager.globalChance.Value)
+            if (GameNetworkManager.Instance.localPlayerController.IsServer || GameNetworkManager.Instance.localPlayerController.IsHost)
+            {
+                try
+                {
+                    GameObject gameObject = UnityEngine.Object.Instantiate(spawnPrefab, position, Quaternion.identity, StartOfRound.Instance.propsContainer);
+                    GrabbableObject scrap = gameObject.GetComponent<GrabbableObject>();
+                    scrap.fallTime = 0f;
+                    gameObject.GetComponent<NetworkObject>().Spawn();
+                }
+                catch (Exception arg)
+                {
+                    Debug.LogError($"Error in SpawnScrap: {arg}");
+                }
+            }
+        }
+
+        private static bool IsCursed(string planetName)
+        {
+            if (new System.Random().Next(1, 100) <= GetPairValue(ConfigManager.globalChance.Value, planetName))
             {
                 return true;
             }
@@ -308,15 +309,13 @@ namespace CursedScraps.Patches
             return false;
         }
 
-        private static CurseEffect GetRandomCurseEffect()
+        private static CurseEffect GetRandomCurseEffect(string planetName)
         {
-            List<CurseEffect> eligibleEffects = new List<CurseEffect>();
-            string planetName = new string(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
-
             // Ajout des malédictions éligibles en fonction de leur valeur d'importance
+            List<CurseEffect> eligibleEffects = new List<CurseEffect>();
             foreach (CurseEffect effect in CursedScraps.curseEffects)
             {
-                for (int i = 0; i < GetWeight(effect.Weight, planetName); i++)
+                for (int i = 0; i < GetPairValue(effect.Weight, planetName); i++)
                 {
                     eligibleEffects.Add(effect);
                 }
@@ -332,30 +331,68 @@ namespace CursedScraps.Patches
             }
         }
 
-        private static int GetWeight(string weightByMoons, string planetName)
+        private static int GetPairValue(string valueByMoons, string planetName)
         {
             // Tableau contenant tous les ensembles clé/valeur pour les noms de planètes/valeurs d'importances
-            string[] weightPairs = weightByMoons.Split(',');
+            string[] valuePairs = valueByMoons.Split(',');
             int defaultValue = 0;
 
-            foreach (string weightPair in weightPairs)
+            foreach (string valuePair in valuePairs)
             {
                 // Ensemble clé/valeur pour nom de la planète/valeur d'importance
-                string[] weightTab = weightPair.Split(':');
-                if (weightTab.Length == 2 && weightTab[0] == planetName)
+                string[] valueTab = valuePair.Split(':');
+                if (valueTab.Length == 2 && valueTab[0] == planetName)
                 {
                     // Retourner la valeur d'importance si la clé est trouvée
-                    return int.Parse(weightTab[1]);
+                    return int.Parse(valueTab[1]);
                 }
-                else if (weightTab.Length == 2 && weightTab[0] == "default")
+                else if (valueTab.Length == 2 && valueTab[0] == "default")
                 {
-                    defaultValue = int.Parse(weightTab[1]);
+                    defaultValue = int.Parse(valueTab[1]);
                 }
             }
             return defaultValue;
         }
 
-        internal static IEnumerator ChangeReflectionScrapCoroutine(GrabbableObject grabbedScrap, Vector3 position)
+        internal static Vector3 GetFurthestPositionScrapSpawn(Vector3 position, ref Item itemToSpawn)
+        {
+            RandomScrapSpawn randomScrapSpawn = UnityEngine.Object.FindObjectsOfType<RandomScrapSpawn>()
+                .Where(p => !p.spawnUsed)
+                .OrderByDescending(p => Vector3.Distance(position, p.transform.position))
+                .FirstOrDefault();
+
+            if (randomScrapSpawn == null)
+            {
+                // Au cas où, mieux vaut prendre un spawn déjà utilisé que de le faire apparaître devant le joueur
+                randomScrapSpawn = UnityEngine.Object.FindObjectsOfType<RandomScrapSpawn>()
+                    .OrderByDescending(p => Vector3.Distance(position, p.transform.position))
+                    .FirstOrDefault();
+            }
+
+            if (randomScrapSpawn.spawnedItemsCopyPosition)
+            {
+                randomScrapSpawn.spawnUsed = true;
+            }
+            else
+            {
+                randomScrapSpawn.transform.position = RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(randomScrapSpawn.transform.position, randomScrapSpawn.itemSpawnRange, RoundManager.Instance.navHit, RoundManager.Instance.AnomalyRandom) + Vector3.up * itemToSpawn.verticalOffset;
+            }
+            return randomScrapSpawn.transform.position + Vector3.up * 0.5f;
+        }
+
+        internal static void CloneScrap(ref GrabbableObject scrap, string nameCore, string nameReflection, ref Vector3 position, ref PlayerControllerB player)
+        {
+            SpawnScrap(ref scrap.itemProperties.spawnPrefab, ref position);
+            GameNetworkManager.Instance.localPlayerController.StartCoroutine(ChangeCloneScrapCoroutine(scrap, position, nameReflection, player));
+
+            ScanNodeProperties componentInChildren = ((Component)(object)scrap).gameObject.GetComponentInChildren<ScanNodeProperties>();
+            if (componentInChildren != null)
+            {
+                componentInChildren.subText = $"Value: ${componentInChildren.scrapValue}" + " \nCurse: " + nameCore;
+            }
+        }
+
+        private static IEnumerator ChangeCloneScrapCoroutine(GrabbableObject grabbedScrap, Vector3 position, string curseEffect, PlayerControllerB player)
         {
             GrabbableObject scrapClone;
             int timePassed = 0;
@@ -367,6 +404,8 @@ namespace CursedScraps.Patches
                 if (timePassed >= timeOut)
                 {
                     scrapClone = GetCloneScrapFromValue(grabbedScrap);
+
+                    if (scrapClone == null) HUDManager.Instance.DisplayTip(Constants.ERROR_OCCURRED, "The scrap couldn't be cloned.");
                     break;
                 }
             }
@@ -378,7 +417,11 @@ namespace CursedScraps.Patches
                 {
                     scrapClone.scrapValue = grabbedScrap.scrapValue;
                     componentInChildren.scrapValue = grabbedScrap.scrapValue;
-                    componentInChildren.subText = $"Value: ${componentInChildren.scrapValue}" + " \nCurse: " + Constants.SYNC_REFLECTION;
+                    componentInChildren.subText = $"Value: ${componentInChildren.scrapValue}" + " \nCurse: " + curseEffect;
+                    if (curseEffect.Equals(Constants.COMM_REFLECTION) && player == GameNetworkManager.Instance.localPlayerController)
+                    {
+                        PlayerManagerPatch.trackedScrap = scrapClone;
+                    }
                 }
             }
         }
@@ -399,17 +442,48 @@ namespace CursedScraps.Patches
             return scrapClone;
         }
 
-        private static GrabbableObject GetCloneScrapFromCurse(GrabbableObject scrapObject, string curseEffect)
+        internal static GrabbableObject GetCloneScrapFromCurse(GrabbableObject scrapObject, string curseEffect, bool isInShip = true)
         {
             string curseEffectClone;
             GrabbableObject coreScrap = UnityEngine.Object.FindObjectsOfType<GrabbableObject>().ToList()
-                    .Where(o => (o.isInShipRoom || o.isInElevator)
+                    .Where(o => ((isInShip && (o.isInShipRoom || o.isInElevator)) || (!isInShip && !o.isInShipRoom && !o.isInElevator))
                         && !string.IsNullOrEmpty(curseEffectClone = PlayerManagerPatch.GetCurseEffect(ref o))
                         && curseEffectClone.Equals(curseEffect)
                         && o.itemProperties.spawnPrefab == scrapObject.itemProperties.spawnPrefab
                         && o.scrapValue == scrapObject.scrapValue)
                     .FirstOrDefault();
             return coreScrap;
+        }
+
+        private static bool ProcessCoopScrap(ref GrabbableObject scrapObject, string coreEffect, string reflectionEffect)
+        {
+            string curseEffect = PlayerManagerPatch.GetCurseEffect(ref scrapObject);
+            if (!string.IsNullOrEmpty(curseEffect) && curseEffect.Equals(coreEffect))
+            {
+                GrabbableObject reflectionScrap = GetCloneScrapFromCurse(scrapObject, reflectionEffect);
+                if (reflectionScrap == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    scrapCoopToDestroy = reflectionScrap;
+                }
+            }
+            else if (!string.IsNullOrEmpty(curseEffect) && curseEffect.Equals(reflectionEffect))
+            {
+                GrabbableObject coreScrap = GetCloneScrapFromCurse(scrapObject, coreEffect);
+                if (coreScrap == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    scrapCoopToDestroy = scrapObject;
+                    scrapObject = coreScrap;
+                }
+            }
+            return true;
         }
 
         private static void RemoveObjectEffect(ref GrabbableObject scrapObject)

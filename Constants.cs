@@ -35,7 +35,13 @@
         public const int DIMINUTIVE_VALUE = -11;
         public const string EXPLORATION = "Exploration";
         public const int EXPLORATION_VALUE = -12;
-        // Impossible action
+        public const string COMMUNICATION = "Communication";
+        public const string COMM_CORE = "Comm Core";
+        public const string COMM_REFLECTION = "Comm Reflection";
+        public const int COMMUNICATION_VALUE = -13;
+        // Popup
+        public const string ERROR_OCCURRED = "Error occurred";
         public const string IMPOSSIBLE_ACTION = "Impossible action";
+        public const string IMPORTANT_INFORMATION = "Important information";
     }
 }
