@@ -19,8 +19,8 @@ namespace CursedScraps.Patches
         internal static List<string> activeCurses = new List<string>();
         internal static List<string> actionsBlockedBy = new List<string>();
         private static GrabbableObject lastGrabbedObject;
-        private static List<PlayerControllerB> immunedPlayers = new List<PlayerControllerB>();
-        private static bool hasCoopCurseActive = false;
+        internal static List<PlayerControllerB> immunedPlayers = new List<PlayerControllerB>();
+        internal static bool hasCoopCurseActive = false;
         // DEAFNESS
         private static float savedMasterVolume = 0f;
         // SYNCHRONIZATION

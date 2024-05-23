@@ -6,6 +6,8 @@
         public const string HIDING_ALWAYS = "Always";
         public const string HIDING_COUNTER = "Counter";
         public const string HIDING_NEVER = "Never";
+        public const string HIDING_COUNTER_NOT_NAMED = "CounterNotNamed";
+        public const string HIDING_NEVER_NOT_NAMED = "NeverNotNamed";
         // Items
         public const string CURSE_PILLS = "Anti-curse pills";
         // Curse effects

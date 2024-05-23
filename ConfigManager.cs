@@ -52,6 +52,7 @@ namespace CursedScraps
         public static ConfigEntry<bool> isShadow;
         public static ConfigEntry<float> shadowMultiplier;
         public static ConfigEntry<string> shadowWeight;
+        public static ConfigEntry<string> shadowExclusions;
         // SYNCHRONIZATION
         public static ConfigEntry<bool> isSynchronization;
         public static ConfigEntry<float> synchronizationMultiplier;
@@ -79,7 +80,12 @@ namespace CursedScraps
             globalChance = CursedScraps.configFile.Bind<string>("_Global_", "Chance", "default:30", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             globalPrevent = CursedScraps.configFile.Bind<bool>("_Global_", "Preventing Settings Changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
             // HIDE MECHANIC
-            hidingMode = CursedScraps.configFile.Bind<string>("_Hiding mechanic_", "Mode", Constants.HIDING_COUNTER, "Mode for the hiding mechanic.\n" + Constants.HIDING_ALWAYS + " - Always hide curses.\n" + Constants.HIDING_NEVER + " - Never hide curses.\n" + Constants.HIDING_COUNTER + " - Use a counter to hide curses once a certain number of non-cursed items have been picked up.");
+            hidingMode = CursedScraps.configFile.Bind<string>("_Hiding mechanic_", "Mode", Constants.HIDING_COUNTER, "Mode for the hiding mechanic.\n" +
+                                                                                                                     Constants.HIDING_ALWAYS + " - Always hide curses.\n" +
+                                                                                                                     Constants.HIDING_NEVER + " - Never hide curses.\n" +
+                                                                                                                     Constants.HIDING_COUNTER + " - Use a counter to hide curses once a certain number of non-cursed items have been picked up.\n" +
+                                                                                                                     Constants.HIDING_NEVER_NOT_NAMED + " - Never hide that a scrap is cursed, but hide the curse by replacing the name with '???'.\n" +
+                                                                                                                     Constants.HIDING_COUNTER_NOT_NAMED + " - Use a counter to hide curses once a certain number of non-cursed items have been picked up and always hide the curse by replacing the name with '???'.");
             hidingCounter = CursedScraps.configFile.Bind<int>("_Hiding mechanic_", "Counter", 10, "Number of non-cursed items that must be picked up before curses are concealed.\nThe counter is reset each time a cursed item is picked up.");
             // ANTI-CURSE PILLS
             isPills = CursedScraps.configFile.Bind<bool>(Constants.CURSE_PILLS, "Enable", true, "Is " + Constants.CURSE_PILLS + " item enabled?\nConsumable that removes all active curses on the player.");
@@ -122,6 +128,7 @@ namespace CursedScraps
             isShadow = CursedScraps.configFile.Bind<bool>(Constants.SHADOW, "Enable", true, "Is " + Constants.SHADOW + " curse enabled?\nAll enemies are invisible by default (their sound is still active), scanning reveals them.");
             shadowMultiplier = CursedScraps.configFile.Bind<float>(Constants.SHADOW, "Multiplier", 2.4f, "Value multiplier for scraps with the " + Constants.SHADOW + " curse.");
             shadowWeight = CursedScraps.configFile.Bind<string>(Constants.SHADOW, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.SHADOW + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            shadowExclusions = CursedScraps.configFile.Bind<string>(Constants.SHADOW, "Exclusion list", "Masked", "List of creatures that will not be affected by the " + Constants.SHADOW + " curse.\nYou can add enemies by separating them with a comma.");
             // SYNCHRONIZATION
             isSynchronization = CursedScraps.configFile.Bind<bool>(Constants.SYNCHRONIZATION, "Enable", true, "Is " + Constants.SYNCHRONIZATION + " curse enabled?\nThe scrap is split into two parts, when both parts are picked up by two different players, their cameras invert.");
             synchronizationMultiplier = CursedScraps.configFile.Bind<float>(Constants.SYNCHRONIZATION, "Multiplier", 7f, "Value multiplier for scraps with the " + Constants.SYNCHRONIZATION + " curse.");

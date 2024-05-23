@@ -11,7 +11,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "1.0.7";
+        private const string modVersion = "1.0.8";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -36,6 +36,7 @@ namespace CursedScraps
             harmony.PatchAll(typeof(ItemManagerPatch));
             harmony.PatchAll(typeof(PlayerManagerPatch));
             harmony.PatchAll(typeof(EnemyAIPatch));
+            harmony.PatchAll(typeof(MenuManagerPatch));
         }
     }
 }

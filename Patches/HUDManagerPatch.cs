@@ -7,6 +7,7 @@ using UnityEngine.Rendering;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
+using UnityEngine.Windows;
 
 namespace CursedScraps.Patches
 {
@@ -64,15 +65,18 @@ namespace CursedScraps.Patches
                                     string[] splitText = scanElementText[1].text.Split(new string[] { "\nCurse: " }, StringSplitOptions.None);
                                     if (splitText.Length > 1)
                                     {
-                                        if (!ConfigManager.hidingMode.Value.Equals(Constants.HIDING_NEVER)
-                                            && (ConfigManager.hidingMode.Value.Equals(Constants.HIDING_ALWAYS)
-                                                || (ConfigManager.hidingMode.Value.Equals(Constants.HIDING_COUNTER)
-                                                    && PlayerManagerPatch.curseCounter >= (GameNetworkManager.Instance.localPlayerController.IsServer || GameNetworkManager.Instance.localPlayerController.IsHost ? ConfigManager.hidingCounter.Value * 2 : ConfigManager.hidingCounter.Value))))
+                                        if (ConfigManager.hidingMode.Value.Equals(Constants.HIDING_ALWAYS)
+                                            || ((ConfigManager.hidingMode.Value.Equals(Constants.HIDING_COUNTER) || ConfigManager.hidingMode.Value.Equals(Constants.HIDING_COUNTER_NOT_NAMED))
+                                                && PlayerManagerPatch.curseCounter >= (GameNetworkManager.Instance.localPlayerController.IsServer || GameNetworkManager.Instance.localPlayerController.IsHost ? ConfigManager.hidingCounter.Value * 2 : ConfigManager.hidingCounter.Value)))
                                         {
                                             scanElementText[1].text = splitText[0];
                                         }
                                         else
                                         {
+                                            if (ConfigManager.hidingMode.Value.Equals(Constants.HIDING_NEVER_NOT_NAMED) || ConfigManager.hidingMode.Value.Equals(Constants.HIDING_COUNTER_NOT_NAMED))
+                                            {
+                                                scanElementText[1].text = scanElementText[1].text.Substring(0, scanElementText[1].text.IndexOf("\nCurse: ")) + "\nCurse: ???";
+                                            }
                                             // nodeType = 1 --> scan rouge
                                             element.GetComponent<Animator>().SetInteger("colorNumber", 1);
                                         }
