@@ -7,7 +7,6 @@ using UnityEngine.Rendering;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
-using UnityEngine.Windows;
 
 namespace CursedScraps.Patches
 {

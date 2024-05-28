@@ -122,7 +122,13 @@ namespace CursedScraps.Patches
                 string curseEffect = GetCurseEffect(ref grabbedScrap);
                 if (!string.IsNullOrEmpty(curseEffect))
                 {
-                    if (IsCoopCursed(curseEffect) || (communicationPlayer != null && !curseEffect.Equals(Constants.COMM_REFLECTION)))
+                    if (IsCoopCursed(curseEffect)
+                        || (communicationPlayer != null
+                            && (curseEffect.Equals(Constants.SYNCHRONIZATION)
+                                || curseEffect.Equals(Constants.SYNC_CORE)
+                                || curseEffect.Equals(Constants.SYNC_REFLECTION)
+                                || curseEffect.Equals(Constants.COMMUNICATION)
+                                || curseEffect.Equals(Constants.COMM_CORE))))
                     {
                         HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You already have an active coop curse.");
                         return false;
@@ -431,42 +437,6 @@ namespace CursedScraps.Patches
             PlayerControllerB player = __instance.playersManager.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
             if (activeCurses.Count > 0)
             {
-                /*if (activeCurses.Contains(Constants.SYNCHRONIZATION)
-                    && switchedPlayer != null
-                    && (player == GameNetworkManager.Instance.localPlayerController || player == switchedPlayer))
-                {
-                    if (player == switchedPlayer && HasCursedScrap(new string[] { Constants.SYNC_CORE, Constants.SYNC_REFLECTION }))
-                    {
-                        EnablePlayerActions(Constants.SYNCHRONIZATION, false);
-                    }
-                    AddActiveCurse(Constants.SYNCHRONIZATION, false);
-                    SwitchPlayerCamera(ref switchedPlayer, false);
-                }
-
-                if (activeCurses.Contains(Constants.COMMUNICATION)
-                    && communicationPlayer != null
-                    && (player == GameNetworkManager.Instance.localPlayerController || player == communicationPlayer))
-                {
-                    if (player == communicationPlayer)
-                    {
-                        // Forcer l'autre partie de l'objet à être lâchée par le joueur en vie
-                        GetCursedScrap(new string[] { Constants.COMM_CORE, Constants.COMM_REFLECTION })?.DiscardItemOnClient();
-                    }
-
-                    // Si joueur qui a déclenché la malédiction, supprimer la capacité de scanner le joueur sélectionné et l'objet à récupérer
-                    GrabbableObject scrap = GetCursedScrap(new string[] { Constants.COMM_CORE });
-                    if (scrap != null)
-                    {
-                        ScanNodeProperties playerNode = ((Component)(object)communicationPlayer).GetComponentInChildren<ScanNodeProperties>();
-                        if (playerNode != null)
-                        {
-                            HUDManagerPatch.DestroyScanNode(ref playerNode);
-                        }
-                    }
-                    AddActiveCurse(Constants.COMMUNICATION, false);
-                    communicationPlayer = null;
-                    trackedScrap = null;
-                }*/
                 DesactiveAllCoopEffects(ref player);
 
                 if (player == GameNetworkManager.Instance.localPlayerController)
