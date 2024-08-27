@@ -9,6 +9,7 @@ namespace CursedScraps
         // GLOBAL
         public static ConfigEntry<string> globalChance;
         public static ConfigEntry<bool> globalPrevent;
+        public static ConfigEntry<string> scrapExclusions;
         // HIDE MECHANIC
         public static ConfigEntry<string> hidingMode;
         public static ConfigEntry<int> hidingCounter;
@@ -80,6 +81,7 @@ namespace CursedScraps
             // GLOBAL
             globalChance = CursedScraps.configFile.Bind<string>("_Global_", "Chance", "default:30", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             globalPrevent = CursedScraps.configFile.Bind<bool>("_Global_", "Preventing Settings Changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
+            scrapExclusions = CursedScraps.configFile.Bind<string>("_Global_", "Exclusion list", "", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
             // HIDE MECHANIC
             hidingMode = CursedScraps.configFile.Bind<string>("_Hiding mechanic_", "Mode", Constants.HIDING_COUNTER, "Mode for the hiding mechanic.\n" +
                                                                                                                      Constants.HIDING_ALWAYS + " - Always hide curses.\n" +

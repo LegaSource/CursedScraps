@@ -189,7 +189,9 @@ namespace CursedScraps.Patches
                     }
                 }
 
-                if (__instance == GameNetworkManager.Instance.localPlayerController)
+                // Gestion de la collision pour DIMINUTIVE
+                if (__instance == GameNetworkManager.Instance.localPlayerController
+                    && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.DIMINUTIVE)) == null)
                 {
                     foreach (Collider collider in Physics.OverlapSphere(__instance.transform.position, 0.65f, StartOfRound.Instance.playersMask))
                     {
@@ -198,8 +200,15 @@ namespace CursedScraps.Patches
                             && playerBehaviourPushed.playerProperties != __instance
                             && playerBehaviourPushed.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.DIMINUTIVE)) != null)
                         {
-                            Vector3 direction = (playerBehaviourPushed.playerProperties.transform.position - __instance.thisController.transform.position).normalized;
-                            CursedScrapsNetworkManager.Instance.PushPlayerServerRpc((int)playerBehaviourPushed.playerProperties.playerClientId, direction * __instance.thisController.velocity.magnitude);
+                            if (__instance.isFallingFromJump)
+                            {
+                                CursedScrapsNetworkManager.Instance.KillPlayerServerRpc((int)playerBehaviourPushed.playerProperties.playerClientId, Vector3.zero, true, (int)CauseOfDeath.Crushing);
+                            }
+                            else
+                            {
+                                Vector3 direction = (playerBehaviourPushed.playerProperties.transform.position - __instance.thisController.transform.position).normalized;
+                                CursedScrapsNetworkManager.Instance.PushPlayerServerRpc((int)playerBehaviourPushed.playerProperties.playerClientId, direction * __instance.thisController.velocity.magnitude * 0.2f);
+                            }
                         }
                     }
                 }

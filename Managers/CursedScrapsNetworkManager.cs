@@ -166,6 +166,22 @@ namespace CursedScraps.Managers
             }
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        public void KillPlayerServerRpc(int playerId, Vector3 velocity, bool spawnBody, int causeOfDeath)
+        {
+            KillPlayerClientRpc(playerId, velocity, spawnBody, causeOfDeath);
+        }
+
+        [ClientRpc]
+        private void KillPlayerClientRpc(int playerId, Vector3 velocity, bool spawnBody, int causeOfDeath)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+            if (player == GameNetworkManager.Instance.localPlayerController)
+            {
+                player.KillPlayer(velocity, spawnBody, (CauseOfDeath)causeOfDeath);
+            }
+        }
+
         // COOP
         [ServerRpc(RequireOwnership = false)]
         public void SetCloneScrapServerRpc(NetworkObjectReference obj, NetworkObjectReference objClone, int playerId, string name, string nameReflection)
@@ -198,11 +214,13 @@ namespace CursedScraps.Managers
 
                             // Spécifique pour COMMUNICATION
                             PlayerCSBehaviour playerBehaviour = StartOfRound.Instance.allPlayerObjects[playerId].GetComponentInChildren<PlayerCSBehaviour>();
-                            if (name.Equals(Constants.COMMUNICATION)
-                                && playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
+                            if (name.Equals(Constants.COMMUNICATION))
                             {
                                 objectBehaviour.playerOwner = playerBehaviour.coopPlayer;
-                                playerBehaviour.trackedScrap = cloneScrap;
+                                if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
+                                {
+                                    playerBehaviour.trackedScrap = cloneScrap;
+                                }
                             }
                         }
                     }

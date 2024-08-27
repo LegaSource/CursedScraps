@@ -61,7 +61,9 @@ namespace CursedScraps.Patches
             if (GameNetworkManager.Instance.localPlayerController.IsHost || GameNetworkManager.Instance.localPlayerController.IsServer)
             {
                 string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
-                if (__instance.scrapValue > 0 && IsCursed(planetName))
+                if ((string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(__instance.itemProperties.itemName))
+                    && __instance.scrapValue > 0
+                    && IsCursed(planetName))
                 {
                     CurseEffect curseEffect = GetRandomCurseEffect(planetName);
                     if (curseEffect != null)
