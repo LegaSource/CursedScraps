@@ -1,7 +1,6 @@
-﻿using HarmonyLib;
-using System.Collections.Generic;
-using System.Reflection;
-using UnityEngine;
+﻿using CursedScraps.Behaviours;
+using HarmonyLib;
+using System.Linq;
 
 namespace CursedScraps.Patches
 {
@@ -13,13 +12,14 @@ namespace CursedScraps.Patches
         {
             if (!ConfigManager.shadowExclusions.Value.Contains(__instance.enemyType.enemyName))
             {
-                if (PlayerManagerPatch.activeCurses.Contains(Constants.SHADOW))
+                PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
+                if (playerBehaviour != null
+                    && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.SHADOW)) != null)
                 {
-                    ScanNodeProperties componentInChildren = ((Component)(object)__instance).gameObject.GetComponentInChildren<ScanNodeProperties>();
-                    if (componentInChildren != null && HUDManager.Instance != null)
+                    ScanNodeProperties scanNode = __instance.gameObject.GetComponentInChildren<ScanNodeProperties>();
+                    if (scanNode != null && HUDManager.Instance != null)
                     {
-                        FieldInfo scanNodes = AccessTools.Field(typeof(HUDManager), "scanNodes");
-                        if (((Dictionary<RectTransform, ScanNodeProperties>)scanNodes.GetValue(HUDManager.Instance)).ContainsValue(componentInChildren))
+                        if (HUDManager.Instance.scanNodes.ContainsValue(scanNode))
                         {
                             __instance.EnableEnemyMesh(true);
                         }
@@ -28,10 +28,10 @@ namespace CursedScraps.Patches
                             __instance.EnableEnemyMesh(false);
                         }
                     }
-                }
-                else
-                {
-                    __instance.EnableEnemyMesh(true);
+                    else
+                    {
+                        __instance.EnableEnemyMesh(true);
+                    }
                 }
             }
         }
