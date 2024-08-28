@@ -50,12 +50,18 @@ namespace CursedScraps.Managers
                     }
                     scanNode.scrapValue = grabbableObject.scrapValue;
                     scanNode.subText = GetNewSubText(ref objectBehaviour, grabbableObject.scrapValue);
-                    scanNode.nodeType = 1;
+                    if (ConfigManager.isRedScanOn.Value)
+                    {
+                        scanNode.nodeType = 1;
+                    }
 
-                    GameObject curseParticleEffect = Instantiate(CursedScraps.curseParticle, grabbableObject.transform.position, Quaternion.identity);
-                    curseParticleEffect.transform.SetParent(grabbableObject.transform);
-                    curseParticleEffect.transform.localScale = grabbableObject.transform.localScale;
-                    objectBehaviour.particleEffect = curseParticleEffect;
+                    if (ConfigManager.isParticleOn.Value)
+                    {
+                        GameObject curseParticleEffect = Instantiate(CursedScraps.curseParticle, grabbableObject.transform.position, Quaternion.identity);
+                        curseParticleEffect.transform.SetParent(grabbableObject.transform);
+                        curseParticleEffect.transform.localScale = grabbableObject.transform.localScale;
+                        objectBehaviour.particleEffect = curseParticleEffect;
+                    }
                 }
             }
         }
@@ -89,7 +95,10 @@ namespace CursedScraps.Managers
                     scanNode.nodeType = 2;
                     objectBehaviour.curseEffects.Clear();
 
-                    Destroy(objectBehaviour.particleEffect);
+                    if (objectBehaviour.particleEffect != null)
+                    {
+                        Destroy(objectBehaviour.particleEffect);
+                    }
                 }
             }
         }

@@ -11,6 +11,8 @@ namespace CursedScraps
         public static ConfigEntry<bool> globalPrevent;
         public static ConfigEntry<string> scrapExclusions;
         public static ConfigEntry<bool> isCurseInfoOn;
+        public static ConfigEntry<bool> isRedScanOn;
+        public static ConfigEntry<bool> isParticleOn;
         public static ConfigEntry<bool> isParticleHideWhenGrabbing;
         // HIDE MECHANIC
         public static ConfigEntry<string> hidingMode;
@@ -85,6 +87,8 @@ namespace CursedScraps
             globalPrevent = CursedScraps.configFile.Bind<bool>("_Global_", "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
             scrapExclusions = CursedScraps.configFile.Bind<string>("_Global_", "Exclusion list", "", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
             isCurseInfoOn = CursedScraps.configFile.Bind<bool>("_Global_", "Curse info", true, "Does the information popup appear when a player is cursed?");
+            isRedScanOn = CursedScraps.configFile.Bind<bool>("_Global_", "Enable red scan", true, "Is red scan on cursed scraps enabled?");
+            isParticleOn = CursedScraps.configFile.Bind<bool>("_Global_", "Enable particle", true, "Is cursed particle enabled?");
             isParticleHideWhenGrabbing = CursedScraps.configFile.Bind<bool>("_Global_", "Hide particle when grabbing", false, "Hide the curse particle when the item is picked up and reappear when it is dropped.\nBy default, the particle is hidden when the item is pocketed and reappears when it's held again.");
             // HIDE MECHANIC
             hidingMode = CursedScraps.configFile.Bind<string>("_Hiding mechanic_", "Mode", Constants.HIDING_COUNTER, "Mode for the hiding mechanic.\n" +
