@@ -24,10 +24,9 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void ShowParticle(GrabbableObject __instance)
         {
-            ObjectCSBehaviour objectBehaviour = __instance.GetComponent<ObjectCSBehaviour>();
-            if (objectBehaviour != null && objectBehaviour.particleEffect != null)
+            if (!ConfigManager.isParticleHideWhenGrabbing.Value && __instance.GetComponent<ObjectCSBehaviour>() != null)
             {
-                objectBehaviour.particleEffect.gameObject.SetActive(true);
+                CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.GetComponent<NetworkObject>(), true);
             }
         }
 
@@ -35,10 +34,9 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void HideParticle(GrabbableObject __instance)
         {
-            ObjectCSBehaviour objectBehaviour = __instance.GetComponent<ObjectCSBehaviour>();
-            if (objectBehaviour != null && objectBehaviour.particleEffect != null)
+            if (!ConfigManager.isParticleHideWhenGrabbing.Value && __instance.GetComponent<ObjectCSBehaviour>() != null)
             {
-                objectBehaviour.particleEffect.gameObject.SetActive(false);
+                CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.GetComponent<NetworkObject>(), false);
             }
         }
 
@@ -58,7 +56,8 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void SetCurseObject(GrabbableObject __instance)
         {
-            if (GameNetworkManager.Instance.localPlayerController.IsHost || GameNetworkManager.Instance.localPlayerController.IsServer)
+            if (GameNetworkManager.Instance?.localPlayerController != null
+                && (GameNetworkManager.Instance.localPlayerController.IsHost || GameNetworkManager.Instance.localPlayerController.IsServer))
             {
                 string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
                 if ((string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(__instance.itemProperties.itemName))
@@ -68,7 +67,11 @@ namespace CursedScraps.Patches
                     CurseEffect curseEffect = GetRandomCurseEffect(planetName);
                     if (curseEffect != null)
                     {
-                        CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(__instance.GetComponent<NetworkObject>(), curseEffect.CurseName);
+                        NetworkObject networkObject = __instance.GetComponent<NetworkObject>();
+                        if (networkObject != null && networkObject.IsSpawned)
+                        {
+                            CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(networkObject, curseEffect.CurseName);
+                        }
                     }
                 }
             }

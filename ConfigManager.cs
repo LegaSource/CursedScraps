@@ -10,6 +10,8 @@ namespace CursedScraps
         public static ConfigEntry<string> globalChance;
         public static ConfigEntry<bool> globalPrevent;
         public static ConfigEntry<string> scrapExclusions;
+        public static ConfigEntry<bool> isCurseInfoOn;
+        public static ConfigEntry<bool> isParticleHideWhenGrabbing;
         // HIDE MECHANIC
         public static ConfigEntry<string> hidingMode;
         public static ConfigEntry<int> hidingCounter;
@@ -80,8 +82,10 @@ namespace CursedScraps
         {
             // GLOBAL
             globalChance = CursedScraps.configFile.Bind<string>("_Global_", "Chance", "default:30", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
-            globalPrevent = CursedScraps.configFile.Bind<bool>("_Global_", "Preventing Settings Changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
+            globalPrevent = CursedScraps.configFile.Bind<bool>("_Global_", "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
             scrapExclusions = CursedScraps.configFile.Bind<string>("_Global_", "Exclusion list", "", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
+            isCurseInfoOn = CursedScraps.configFile.Bind<bool>("_Global_", "Curse info", true, "Does the information popup appear when a player is cursed?");
+            isParticleHideWhenGrabbing = CursedScraps.configFile.Bind<bool>("_Global_", "Hide particle when grabbing", false, "Hide the curse particle when the item is picked up and reappear when it is dropped.\nBy default, the particle is hidden when the item is pocketed and reappears when it's held again.");
             // HIDE MECHANIC
             hidingMode = CursedScraps.configFile.Bind<string>("_Hiding mechanic_", "Mode", Constants.HIDING_COUNTER, "Mode for the hiding mechanic.\n" +
                                                                                                                      Constants.HIDING_ALWAYS + " - Always hide curses.\n" +

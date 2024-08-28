@@ -34,11 +34,20 @@ namespace CursedScraps.Patches
             GrabbableObject grabbableObject = __instance.hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
             if (grabbableObject != null)
             {
-                ObjectCSBehaviour objectCSBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
-                if (objectCSBehaviour != null && objectCSBehaviour.playerOwner != null && objectCSBehaviour.playerOwner != GameNetworkManager.Instance.localPlayerController)
+                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
+                if (objectBehaviour != null)
                 {
-                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You are not the owner of this object.");
-                    return false;
+                    if (objectBehaviour.playerOwner != null && objectBehaviour.playerOwner != GameNetworkManager.Instance.localPlayerController)
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You are not the owner of this object.");
+                        return false;
+                    }
+                    if (objectBehaviour.curseEffects.FirstOrDefault(c => c.IsCoop) != null
+                        && __instance.GetComponent<PlayerCSBehaviour>().activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.CAPTIVE)) != null)
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You can't grab this object when you have the 'captive' curse.");
+                        return false;
+                    }
                 }
             }
             return true;
@@ -51,9 +60,13 @@ namespace CursedScraps.Patches
             if (__instance.currentlyHeldObjectServer != null)
             {
                 ObjectCSBehaviour objectBehaviour = __instance.currentlyHeldObjectServer.GetComponent<ObjectCSBehaviour>();
-                // Affectation de la malédiction au joueur
                 if (objectBehaviour != null)
                 {
+                    if (ConfigManager.isParticleHideWhenGrabbing.Value)
+                    {
+                        CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), false);
+                    }
+                    // Affectation des malédictions au joueur
                     foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
                     {
                         CSPlayerManager.SetPlayerCurseEffect(__instance, curseEffect, true);
@@ -137,12 +150,14 @@ namespace CursedScraps.Patches
                     if (curseEffect != null)
                     {
                         // Si object coop en phase de recherche d'un joueur, on peut désactiver l'effet au drop
-                        if (objectBehaviour.playerOwner == null)
+                        if (objectBehaviour.playerOwner == null
+                            // Si l'effet est actif sur les deux joueurs, on peut drop l'objet seulement si les deux joueurs sont dans le vaisseau
+                            || (__instance.isInHangarShipRoom && playerBehaviour.coopPlayer.isInHangarShipRoom))
                         {
-                            CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect, false);
+                            CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect);
                         }
                         // Sinon impossible de drop l'objet
-                        else if (!__instance.isInHangarShipRoom)
+                        else
                         {
                             HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to drop this object.");
                             return false;
@@ -153,6 +168,10 @@ namespace CursedScraps.Patches
                     if (__instance.isInHangarShipRoom && CSPlayerManager.RemoveCoopEffects(ref objectBehaviour))
                     {
                         CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>());
+                    }
+                    else if (ConfigManager.isParticleHideWhenGrabbing.Value && objectBehaviour != null)
+                    {
+                        CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), true);
                     }
                 }
             }
@@ -224,7 +243,7 @@ namespace CursedScraps.Patches
             {
                 foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
                 {
-                    CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect, true);
+                    CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect);
                     if (!curseEffect.IsCoop)
                     {
                         CSPlayerManager.SetPlayerCurseEffect(__instance, curseEffect, false);

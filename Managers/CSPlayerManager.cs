@@ -76,7 +76,7 @@ namespace CursedScraps.Managers
                 if (enable && isReturnOk)
                 {
                     playerBehaviour.activeCurses.Add(curseEffect);
-                    if (GameNetworkManager.Instance.localPlayerController == playerBehaviour.playerProperties)
+                    if (ConfigManager.isCurseInfoOn.Value && GameNetworkManager.Instance.localPlayerController == playerBehaviour.playerProperties)
                     {
                         HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"You have just been affected by the curse {curseEffect.CurseName}");
                     }
@@ -392,7 +392,7 @@ namespace CursedScraps.Managers
 
         public static void ApplyCommunicationSecondPart(PlayerCSBehaviour playerBehaviour, ref ObjectCSBehaviour objectBehaviour, ref CurseEffect curseEffect)
         {
-            ObjectCSBehaviour objectBehaviourClone = objectBehaviour.objectProperties.GetComponent<ObjectCSBehaviour>();
+            ObjectCSBehaviour objectBehaviourClone = CSObjectManager.GetCloneScrap(objectBehaviour.objectProperties)?.GetComponent<ObjectCSBehaviour>();
             if (objectBehaviourClone != null)
             {
                 objectBehaviour.playerOwner = playerBehaviour.playerProperties;
@@ -443,6 +443,9 @@ namespace CursedScraps.Managers
                     {
                         if (grabbableObject.isHeld && grabbableObject.playerHeldBy != null)
                         {
+                            objectBehaviour.playerOwner = playerBehaviour.playerProperties;
+                            grabbableObject.GetComponent<ObjectCSBehaviour>().playerOwner = grabbableObject.playerHeldBy;
+
                             if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController
                                 || grabbableObject.playerHeldBy == GameNetworkManager.Instance.localPlayerController)
                             {
@@ -505,20 +508,18 @@ namespace CursedScraps.Managers
             }
         }
 
-        public static void DesactiveCoopEffect(ref PlayerCSBehaviour playerBehaviour, CurseEffect curseEffect, bool isPlayerGone)
+        public static void DesactiveCoopEffect(ref PlayerCSBehaviour playerBehaviour, CurseEffect curseEffect)
         {
             // isPlayerGone - le joueur coop est mort - sinon les deux joueurs doivent se trouver dans le vaisseau
-            if (playerBehaviour.coopPlayer != null
-                && (isPlayerGone || (playerBehaviour.playerProperties.isInHangarShipRoom && playerBehaviour.coopPlayer.isInHangarShipRoom)))
+            if (playerBehaviour.coopPlayer != null)
             {
                 // isCoop: est le joueur coop
                 CursedScrapsNetworkManager.Instance.DesactiveCoopEffectServerRpc((int)playerBehaviour.coopPlayer.playerClientId, curseEffect.CurseName, isCoop: true);
                 CursedScrapsNetworkManager.Instance.DesactiveCoopEffectServerRpc((int)playerBehaviour.playerProperties.playerClientId, curseEffect.CurseName, isCoop: false);
             }
             // Cas pour débloquer le joueur lorsqu'il ramasse la pièce mais que la seconde n'est pas encore ramassée
-            else if (playerBehaviour.coopPlayer == null)
+            else
             {
-                playerBehaviour.trackedScrap = null;
                 EnablePlayerActions(ref curseEffect, true);
                 CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)playerBehaviour.playerProperties.playerClientId, curseEffect.CurseName, false);
             }

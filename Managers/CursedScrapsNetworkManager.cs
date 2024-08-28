@@ -149,6 +149,25 @@ namespace CursedScraps.Managers
             }
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        public void EnableParticleServerRpc(NetworkObjectReference obj, bool enable)
+        {
+            EnableParticleClientRpc(obj, enable);
+        }
+
+        [ClientRpc]
+        private void EnableParticleClientRpc(NetworkObjectReference obj, bool enable)
+        {
+            if (obj.TryGet(out var networkObject))
+            {
+                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
+                if (objectBehaviour != null && objectBehaviour.particleEffect != null)
+                {
+                    objectBehaviour.particleEffect.gameObject.SetActive(enable);
+                }
+            }
+        }
+
         // DIMINUTIVE
         [ServerRpc(RequireOwnership = false)]
         public void PushPlayerServerRpc(int playerId, Vector3 pushVector)
