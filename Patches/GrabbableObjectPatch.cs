@@ -4,6 +4,7 @@ using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace CursedScraps.Patches
 {
@@ -62,6 +63,7 @@ namespace CursedScraps.Patches
                 string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
                 if ((string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(__instance.itemProperties.itemName))
                     && __instance.scrapValue > 0
+                    && __instance.isInFactory
                     && IsCursed(planetName))
                 {
                     CurseEffect curseEffect = GetRandomCurseEffect(planetName);
@@ -88,9 +90,10 @@ namespace CursedScraps.Patches
 
         private static CurseEffect GetRandomCurseEffect(string planetName)
         {
+            bool isMultiplayer = StartOfRound.Instance.allPlayerScripts.Where(p => p.isPlayerControlled && !p.isTestingPlayer).Count() > 1;
             // Ajout des malédictions éligibles en fonction de leur valeur d'importance
             List<CurseEffect> eligibleEffects = new List<CurseEffect>();
-            foreach (CurseEffect effect in CursedScraps.curseEffects)
+            foreach (CurseEffect effect in CursedScraps.curseEffects.Where(c => isMultiplayer || !c.IsCoop))
             {
                 for (int i = 0; i < GetValueFromPair(effect.Weight, planetName); i++)
                 {
