@@ -4,6 +4,7 @@ using GameNetcodeStuff;
 using HarmonyLib;
 using System.Linq;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -54,14 +55,12 @@ namespace CursedScraps.Patches
                         SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
                         if (!sorBehaviour.scannedObjects.Contains(objectBehaviour.objectProperties))
                         {
-                            sorBehaviour.counter++;
-                            sorBehaviour.scannedObjects.Add(objectBehaviour.objectProperties);
+                            CursedScrapsNetworkManager.Instance.IncrementPenaltyCounterServerRpc(objectBehaviour.objectProperties.GetComponent<NetworkObject>());
                         }
                         if (sorBehaviour.counter >= ConfigManager.penaltyCounter.Value)
                         {
                             foreach (CurseEffect curseEffect in objectBehaviour.curseEffects.Where(c => !c.IsCoop))
                             {
-                                sorBehaviour.counter = 0;
                                 if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_HARD))
                                 {
                                     foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts.Where(p => p.isPlayerControlled && !p.isPlayerDead))

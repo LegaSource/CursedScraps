@@ -113,6 +113,28 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
+        public void SetPlayerCurseEffectServerRpc(int playerId, string curseName, bool enable)
+        {
+            SetPlayerCurseEffectClientRpc(playerId, curseName, enable);
+        }
+
+        [ClientRpc]
+        private void SetPlayerCurseEffectClientRpc(int playerId, string curseName, bool enable)
+        {
+            CurseEffect curseEffect = CursedScraps.curseEffects.Where(c => c.CurseName.Equals(curseName)).FirstOrDefault();
+            if (curseEffect != null)
+            {
+                PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+                CSPlayerManager.SetPlayerCurseEffect(player, curseEffect, enable);
+
+                // Reset du compteur de pénalité
+                SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+                sorBehaviour.counter = 0;
+                sorBehaviour.scannedObjects.Clear();
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
         public void RemoveAllPlayerCurseEffectServerRpc(int playerId)
         {
             RemoveAllPlayerCurseEffectClientRpc(playerId);
@@ -137,23 +159,6 @@ namespace CursedScraps.Managers
                         CSPlayerManager.SetPlayerCurseEffect(player, curseEffect, false);
                     }
                 }
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void SetPlayerCurseEffectServerRpc(int playerId, string curseName, bool enable)
-        {
-            SetPlayerCurseEffectClientRpc(playerId, curseName, enable);
-        }
-
-        [ClientRpc]
-        private void SetPlayerCurseEffectClientRpc(int playerId, string curseName, bool enable)
-        {
-            CurseEffect curseEffect = CursedScraps.curseEffects.Where(c => c.CurseName.Equals(curseName)).FirstOrDefault();
-            if (curseEffect != null)
-            {
-                PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-                CSPlayerManager.SetPlayerCurseEffect(player, curseEffect, enable);
             }
         }
 
@@ -376,6 +381,41 @@ namespace CursedScraps.Managers
             {
                 player.transform.rotation = Quaternion.LookRotation(direction);
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void IncrementPenaltyCounterServerRpc(NetworkObjectReference obj)
+        {
+            IncrementPenaltyCounterClientRpc(obj);
+        }
+
+        [ClientRpc]
+        private void IncrementPenaltyCounterClientRpc(NetworkObjectReference obj)
+        {
+            if (obj.TryGet(out var networkObject))
+            {
+                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
+                if (objectBehaviour != null)
+                {
+                    SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+                    sorBehaviour.counter++;
+                    sorBehaviour.scannedObjects.Add(objectBehaviour.objectProperties);
+                }
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ResetPenaltyCounterServerRpc()
+        {
+            ResetPenaltyCounterClientRpc();
+        }
+
+        [ClientRpc]
+        private void ResetPenaltyCounterClientRpc()
+        {
+            SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+            sorBehaviour.counter = 0;
+            sorBehaviour.scannedObjects.Clear();
         }
     }
 }
