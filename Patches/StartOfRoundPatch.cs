@@ -23,6 +23,11 @@ namespace CursedScraps.Patches
                     CursedScraps.mls.LogInfo("Spawning CursedScrapsNetworkManager");
                 }
             }
+
+            if (__instance.GetComponent<SORCSBehaviour>() == null)
+            {
+                __instance.gameObject.AddComponent<SORCSBehaviour>();
+            }
         }
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.OnDisable))]

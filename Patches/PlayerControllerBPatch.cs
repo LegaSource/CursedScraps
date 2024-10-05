@@ -22,9 +22,29 @@ namespace CursedScraps.Patches
             }
         }
 
+        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Update))]
+        [HarmonyPostfix]
+        private static void UpdatePlayerControllerB(ref PlayerControllerB __instance)
+        {
+            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour != null && playerBehaviour.targetDoor != null)
+            {
+                if (Vector3.Distance(playerBehaviour.targetDoor.transform.position, __instance.transform.position) > ConfigManager.explorationDistance.Value)
+                {
+                    if (!playerBehaviour.isRendered) CustomPassManager.SetupCustomPassForDoor(playerBehaviour.targetDoor);
+                    playerBehaviour.isRendered = true;
+                }
+                else
+                {
+                    CustomPassManager.RemoveAuraFromDoor();
+                    playerBehaviour.isRendered = false;
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.BeginGrabObject))]
         [HarmonyPrefix]
-        private static bool PreventGrabObject(ref PlayerControllerB __instance)
+        private static bool PreGrabObject(ref PlayerControllerB __instance)
         {
             __instance.interactRay = new Ray(__instance.gameplayCamera.transform.position, __instance.gameplayCamera.transform.forward);
             if (!Physics.Raycast(__instance.interactRay, out __instance.hit, __instance.grabDistance, __instance.interactableObjectsMask) || __instance.hit.collider.gameObject.layer == 8 || !(__instance.hit.collider.tag == "PhysicsProp") || __instance.twoHanded || __instance.sinkingValue > 0.73f || Physics.Linecast(__instance.gameplayCamera.transform.position, __instance.hit.collider.transform.position + __instance.transform.up * 0.16f, 1073741824, QueryTriggerInteraction.Ignore))
@@ -62,10 +82,7 @@ namespace CursedScraps.Patches
                 ObjectCSBehaviour objectBehaviour = __instance.currentlyHeldObjectServer.GetComponent<ObjectCSBehaviour>();
                 if (objectBehaviour != null)
                 {
-                    if (ConfigManager.isParticleHideWhenGrabbing.Value)
-                    {
-                        CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), false);
-                    }
+                    CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), false);
                     // Affectation des malédictions au joueur
                     foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
                     {
@@ -149,7 +166,7 @@ namespace CursedScraps.Patches
                     CurseEffect curseEffect = objectBehaviour.curseEffects.FirstOrDefault(c => c.IsCoop);
                     if (curseEffect != null)
                     {
-                        // Si object coop en phase de recherche d'un joueur, on peut désactiver l'effet au drop
+                        // Si objet coop en phase de recherche d'un joueur, on peut désactiver l'effet au drop
                         if (objectBehaviour.playerOwner == null
                             // Si l'effet est actif sur les deux joueurs, on peut drop l'objet seulement si les deux joueurs sont dans le vaisseau
                             || (__instance.isInHangarShipRoom && playerBehaviour.coopPlayer.isInHangarShipRoom))
@@ -169,7 +186,7 @@ namespace CursedScraps.Patches
                     {
                         CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>());
                     }
-                    else if (ConfigManager.isParticleHideWhenGrabbing.Value && objectBehaviour != null)
+                    else
                     {
                         CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), true);
                     }
@@ -238,18 +255,7 @@ namespace CursedScraps.Patches
         [HarmonyPrefix]
         private static void PlayerDeath(ref PlayerControllerB __instance)
         {
-            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
-            {
-                foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
-                {
-                    CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect);
-                    if (!curseEffect.IsCoop)
-                    {
-                        CSPlayerManager.SetPlayerCurseEffect(__instance, curseEffect, false);
-                    }
-                }
-            }
+            CursedScrapsNetworkManager.Instance.RemoveAllPlayerCurseEffectServerRpc((int)__instance.playerClientId);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.ItemTertiaryUse_performed))]

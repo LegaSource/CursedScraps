@@ -1,5 +1,6 @@
 ﻿using CursedScraps.Behaviours;
 using CursedScraps.Managers;
+using GameNetcodeStuff;
 using HarmonyLib;
 using System.Linq;
 using TMPro;
@@ -13,7 +14,7 @@ namespace CursedScraps.Patches
         public static GameObject chrono;
         public static TextMeshProUGUI chronoText;
 
-        [HarmonyPatch(typeof(HUDManager), "Start")]
+        [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.Start))]
         [HarmonyPostfix]
         private static void Start(HUDManager __instance)
         {
@@ -34,15 +35,46 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void ScanPerformed(ref HUDManager __instance, ref ScanNodeProperties node)
         {
-            PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.PARALYSIS)) != null)
+            if (__instance.scanNodes.ContainsValue(node))
             {
-                for (int i = 0; i < __instance.scanElements.Length; i++)
+                PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
+                if (playerBehaviour != null
+                    && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.PARALYSIS)) != null
+                    && node.nodeType == 1)
                 {
-                    if (__instance.scanNodes.TryAdd(__instance.scanElements[i], node) && node.nodeType == 1)
+                    CSPlayerManager.Paralyze(ref playerBehaviour);
+                }
+
+                // Penalty mode
+                if (!string.IsNullOrEmpty(ConfigManager.penaltyMode.Value) && !ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_NONE))
+                {
+                    ObjectCSBehaviour objectBehaviour = node.GetComponentInParent<ObjectCSBehaviour>();
+                    if (objectBehaviour != null && objectBehaviour.curseEffects.Count() > 0)
                     {
-                        CSPlayerManager.Paralyze(ref playerBehaviour);
-                        break;
+                        SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+                        if (!sorBehaviour.scannedObjects.Contains(objectBehaviour.objectProperties))
+                        {
+                            sorBehaviour.counter++;
+                            sorBehaviour.scannedObjects.Add(objectBehaviour.objectProperties);
+                        }
+                        if (sorBehaviour.counter >= ConfigManager.penaltyCounter.Value)
+                        {
+                            foreach (CurseEffect curseEffect in objectBehaviour.curseEffects.Where(c => !c.IsCoop))
+                            {
+                                sorBehaviour.counter = 0;
+                                if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_HARD))
+                                {
+                                    foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts.Where(p => p.isPlayerControlled && !p.isPlayerDead))
+                                    {
+                                        CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)player.playerClientId, curseEffect.CurseName, true);
+                                    }
+                                }
+                                else if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_MEDIUM))
+                                {
+                                    CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, curseEffect.CurseName, true);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -56,6 +88,33 @@ namespace CursedScraps.Patches
             if (playerBehaviour != null && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.BLURRY)) != null)
             {
                 ___drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
+            }
+        }
+
+        [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.HoldInteractionFill))]
+        [HarmonyPostfix]
+        private static void EntranceInteraction(ref bool __result)
+        {
+            if (!__result)
+            {
+                return;
+            }
+            PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour != null && playerBehaviour.activeCurses.FirstOrDefault(p => p.CurseName.Equals(Constants.EXPLORATION)) != null)
+            {
+                EntranceTeleport entranceTeleport = playerBehaviour.playerProperties.hoveringOverTrigger?.gameObject.GetComponent<EntranceTeleport>();
+                if (entranceTeleport != null)
+                {
+                    if (entranceTeleport != playerBehaviour.targetDoor)
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from using this doorway.");
+                        __result = false;
+                    }
+                    else
+                    {
+                        CSPlayerManager.ChangeRandomEntranceId(playerBehaviour.playerProperties.isInsideFactory, ref playerBehaviour);
+                    }
+                }
             }
         }
     }

@@ -49,7 +49,7 @@ namespace CursedScraps.Managers
                         grabbableObject.scrapValue = (int)(grabbableObject.scrapValue * curseEffect.Multiplier);
                     }
                     scanNode.scrapValue = grabbableObject.scrapValue;
-                    scanNode.subText = GetNewSubText(ref objectBehaviour, grabbableObject.scrapValue);
+                    scanNode.subText = GetNewSubText(ref objectBehaviour, grabbableObject.scrapValue.ToString());
                     if (ConfigManager.isRedScanOn.Value)
                     {
                         scanNode.nodeType = 1;
@@ -66,11 +66,20 @@ namespace CursedScraps.Managers
             }
         }
 
-        public string GetNewSubText(ref ObjectCSBehaviour objectCSBehaviour, int scrapValue)
+        public string GetNewSubText(ref ObjectCSBehaviour objectCSBehaviour, string scrapValue)
         {
-            string curseText = "";
-            foreach (string curseName in objectCSBehaviour.curseEffects.Select(c => c.CurseName))
+            if (ConfigManager.isHideValue.Value)
             {
+                scrapValue = "???";
+            }
+            string curseText = "";
+            foreach (CurseEffect curseEffect in objectCSBehaviour.curseEffects)
+            {
+                string curseName = curseEffect.CurseName;
+                if (ConfigManager.isHideValue.Value)
+                {
+                    curseName = "???";
+                }
                 curseText += $"\nCurse: {curseName}";
             }
             return $"Value: ${scrapValue}{curseText}";
@@ -98,6 +107,34 @@ namespace CursedScraps.Managers
                     if (objectBehaviour.particleEffect != null)
                     {
                         Destroy(objectBehaviour.particleEffect);
+                    }
+                }
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void RemoveAllPlayerCurseEffectServerRpc(int playerId)
+        {
+            RemoveAllPlayerCurseEffectClientRpc(playerId);
+        }
+
+        [ClientRpc]
+        private void RemoveAllPlayerCurseEffectClientRpc(int playerId)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+            PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour != null)
+            {
+                foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
+                {
+                    // Ne faire que chez le joueur concerné car la méthode possède déjà des méthodes Rpc
+                    if (player == GameNetworkManager.Instance.localPlayerController)
+                    {
+                        CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect);
+                    }
+                    if (!curseEffect.IsCoop)
+                    {
+                        CSPlayerManager.SetPlayerCurseEffect(player, curseEffect, false);
                     }
                 }
             }

@@ -1,0 +1,40 @@
+﻿using System.Collections.Generic;
+using UnityEngine.Rendering.HighDefinition;
+using UnityEngine;
+
+namespace CursedScraps.Behaviours
+{
+    internal class WallhackCustomPass : CustomPass
+    {
+        public Material wallhackMaterial;
+        private List<Renderer> targetRenderers = new List<Renderer>();
+
+        public void SetTargetRenderers(Renderer[] renderers, Material material)
+        {
+            targetRenderers.Clear();
+            targetRenderers.AddRange(renderers);
+            wallhackMaterial = material;
+        }
+
+        public void ClearTargetRenderers()
+        {
+            targetRenderers.Clear();
+        }
+
+        public override void Execute(CustomPassContext ctx)
+        {
+            if (targetRenderers == null || wallhackMaterial == null)
+            {
+                return;
+            }
+
+            foreach (Renderer renderer in targetRenderers)
+            {
+                for (int i = 0; i < renderer.sharedMaterials.Length; i++)
+                {
+                    ctx.cmd.DrawRenderer(renderer, wallhackMaterial);
+                }
+            }
+        }
+    }
+}

@@ -12,6 +12,9 @@ namespace CursedScraps.Behaviours
         // DIMINUTIVE
         public Vector3 originalScale;
         public bool doubleJump = false;
+        // EXPLORATION
+        public EntranceTeleport targetDoor;
+        public bool isRendered = false;
         // COOP CURSES
         public PlayerControllerB coopPlayer;
         // COMMUNICATION

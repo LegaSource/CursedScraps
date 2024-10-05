@@ -2,6 +2,7 @@
 using GameNetcodeStuff;
 using Newtonsoft.Json.Linq;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -51,7 +52,7 @@ namespace CursedScraps.Managers
                             ApplyDeafness(enable);
                             break;
                         case Constants.EXPLORATION:
-                            //CSPlayer.ApplyExploration(enable);
+                            ApplyExploration(enable, ref playerBehaviour);
                             break;
                         default:
                             break;
@@ -232,6 +233,28 @@ namespace CursedScraps.Managers
                     IngamePlayerSettings.Instance.ChangeMasterVolume((int)(savedMasterVolume * 100));
                 }
             }
+        }
+
+        public static void ApplyExploration(bool enable, ref PlayerCSBehaviour playerBehaviour)
+        {
+            if (enable && playerBehaviour.targetDoor == null)
+            {
+                ChangeRandomEntranceId(!playerBehaviour.playerProperties.isInsideFactory, ref playerBehaviour);
+            }
+            else if (!enable)
+            {
+                CustomPassManager.RemoveAuraFromDoor();
+                playerBehaviour.isRendered = false;
+                playerBehaviour.targetDoor = null;
+            }
+        }
+
+        public static void ChangeRandomEntranceId(bool isEntrance, ref PlayerCSBehaviour playerBehaviour)
+        {
+            List<EntranceTeleport> entrances = Object.FindObjectsOfType<EntranceTeleport>()
+                .Where(e => e.isEntranceToBuilding == isEntrance)
+                .ToList();
+            playerBehaviour.targetDoor = entrances[new System.Random().Next(entrances.Count)];
         }
 
         public static void ApplyErrant()

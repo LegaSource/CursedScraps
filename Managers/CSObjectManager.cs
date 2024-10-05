@@ -1,6 +1,7 @@
 ﻿using CursedScraps.Behaviours;
 using GameNetcodeStuff;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -10,6 +11,37 @@ namespace CursedScraps.Managers
     internal class CSObjectManager
     {
         public static int timeOut = 5;
+
+        public static GrabbableObject SpawnNewItem(ref RoundManager roundManager, Item itemToSpawn)
+        {
+            try
+            {
+                System.Random random = new System.Random();
+                List<RandomScrapSpawn> listRandomScrapSpawn = UnityEngine.Object.FindObjectsOfType<RandomScrapSpawn>().Where(s => !s.spawnUsed).ToList();
+
+                if (listRandomScrapSpawn.Count <= 0) return null;
+
+                int indexRandomScrapSpawn = random.Next(0, listRandomScrapSpawn.Count);
+                RandomScrapSpawn randomScrapSpawn = listRandomScrapSpawn[indexRandomScrapSpawn];
+                if (randomScrapSpawn.spawnedItemsCopyPosition)
+                {
+                    randomScrapSpawn.spawnUsed = true;
+                    listRandomScrapSpawn.RemoveAt(indexRandomScrapSpawn);
+                }
+                else
+                {
+                    randomScrapSpawn.transform.position = roundManager.GetRandomNavMeshPositionInBoxPredictable(randomScrapSpawn.transform.position, randomScrapSpawn.itemSpawnRange, roundManager.navHit, roundManager.AnomalyRandom) + Vector3.up * itemToSpawn.verticalOffset;
+                }
+
+                Vector3 position = randomScrapSpawn.transform.position + Vector3.up * 0.5f;
+                return SpawnScrap(ref itemToSpawn.spawnPrefab, ref position);
+            }
+            catch (Exception arg)
+            {
+                CursedScraps.mls.LogError($"Error in SpawnNewItem: {arg}");
+            }
+            return null;
+        }
 
         public static Vector3 GetFurthestPositionScrapSpawn(Vector3 position, ref Item itemToSpawn)
         {
@@ -41,7 +73,7 @@ namespace CursedScraps.Managers
         {
             if (GameNetworkManager.Instance.localPlayerController.IsServer || GameNetworkManager.Instance.localPlayerController.IsHost)
             {
-                GrabbableObject cloneScrap = SpawnScrap(ref objectBehaviour.objectProperties, ref position);
+                GrabbableObject cloneScrap = SpawnScrap(ref objectBehaviour.objectProperties.itemProperties.spawnPrefab, ref position);
                 if (cloneScrap != null)
                 {
                     CursedScrapsNetworkManager.Instance.SetCloneScrapServerRpc(objectBehaviour.objectProperties.GetComponent<NetworkObject>(), cloneScrap.GetComponent<NetworkObject>(), (int)player.playerClientId, name, nameReflection);
@@ -84,11 +116,11 @@ namespace CursedScraps.Managers
             return true;
         }
 
-        public static GrabbableObject SpawnScrap(ref GrabbableObject grabbableObject, ref Vector3 position)
+        public static GrabbableObject SpawnScrap(ref GameObject spawnPrefab, ref Vector3 position)
         {
             try
             {
-                GameObject gameObject = UnityEngine.Object.Instantiate(grabbableObject.itemProperties.spawnPrefab, position, Quaternion.identity, StartOfRound.Instance.propsContainer);
+                GameObject gameObject = UnityEngine.Object.Instantiate(spawnPrefab, position, Quaternion.identity, StartOfRound.Instance.propsContainer);
                 GrabbableObject cloneScrap = gameObject.GetComponent<GrabbableObject>();
                 cloneScrap.fallTime = 0f;
                 gameObject.GetComponent<NetworkObject>().Spawn();

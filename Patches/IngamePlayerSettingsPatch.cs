@@ -1,4 +1,5 @@
 ﻿using CursedScraps.Behaviours;
+using CursedScraps.Managers;
 using HarmonyLib;
 using System;
 using System.Linq;

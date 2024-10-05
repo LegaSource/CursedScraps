@@ -2,14 +2,12 @@
 {
     internal class Constants
     {
-        // Hiding mechanic
-        public const string HIDING_ALWAYS = "Always";
-        public const string HIDING_COUNTER = "Counter";
-        public const string HIDING_NEVER = "Never";
-        public const string HIDING_COUNTER_NOT_NAMED = "CounterNotNamed";
-        public const string HIDING_NEVER_NOT_NAMED = "NeverNotNamed";
+        // Penalty mechanic
+        public const string PENALTY_HARD = "Hard";
+        public const string PENALTY_MEDIUM = "Medium";
+        public const string PENALTY_NONE = "None";
         // Items
-        public const string CURSE_PILLS = "Anti-curse pills";
+        public const string HOLY_WATER = "Holy Water";
         // Curse effects
         public const string INHIBITION = "Inhibition";
         public const string CONFUSION = "Confusion";
