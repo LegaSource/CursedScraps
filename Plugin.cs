@@ -8,11 +8,12 @@ using LethalLib.Modules;
 using BepInEx.Logging;
 using CursedScraps.Patches;
 using System.Collections.Generic;
-using CursedScraps.Behaviours;
 using CursedScraps.Managers;
 using CursedScraps.Values;
 using CursedScraps.Patches.ModsPatches;
 using System;
+using CursedScraps.Behaviours.Items;
+using CursedScraps.Behaviours.Curses;
 
 namespace CursedScraps
 {
@@ -21,7 +22,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.0.5";
+        private const string modVersion = "2.0.6";
 
         private readonly Harmony harmony = new Harmony(modGUID);
         private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -29,9 +30,11 @@ namespace CursedScraps
         public static ConfigFile configFile;
 
         public static List<CustomItem> customItems = new List<CustomItem>();
-        internal static List<CurseEffect> curseEffects = new List<CurseEffect>();
+        public static List<CurseEffect> curseEffects = new List<CurseEffect>();
         public static GameObject managerPrefab = NetworkPrefabs.CreateNetworkPrefab("CursedScrapsNetworkManager");
         public static GameObject curseParticle;
+        public static GameObject hotParticle;
+        public static GameObject coldParticle;
         public static Material wallhackShader;
 
         public void Awake()
@@ -54,7 +57,6 @@ namespace CursedScraps
             harmony.PatchAll(typeof(HUDManagerPatch));
             harmony.PatchAll(typeof(PlayerControllerBPatch));
             harmony.PatchAll(typeof(EnemyAIPatch));
-            harmony.PatchAll(typeof(TimeOfDayPatch));
             PatchOtherMods(harmony);
         }
 
@@ -85,7 +87,8 @@ namespace CursedScraps
         {
             customItems = new List<CustomItem>
             {
-                new CustomItem(ConfigManager.isHolyWater.Value, typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value)
+                new CustomItem(ConfigManager.isHolyWater.Value, typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value),
+                new CustomItem(true, typeof(OldScroll), bundle.LoadAsset<Item>("Assets/OldScroll/OldScrollItem.asset"), ConfigManager.isOldScrollSpawnable.Value, ConfigManager.maxOldScroll.Value, ConfigManager.oldScrollRarity.Value)
             };
 
             foreach (CustomItem customItem in customItems)
@@ -106,9 +109,17 @@ namespace CursedScraps
 
         public static void LoadParticles()
         {
-            curseParticle = bundle.LoadAsset<GameObject>("Assets/CurseParticle/CurseParticle.prefab");
+            curseParticle = bundle.LoadAsset<GameObject>("Assets/Particles/CurseParticle.prefab");
             NetworkPrefabs.RegisterNetworkPrefab(curseParticle);
             Utilities.FixMixerGroups(curseParticle);
+
+            hotParticle = bundle.LoadAsset<GameObject>("Assets/Particles/HotParticle.prefab");
+            NetworkPrefabs.RegisterNetworkPrefab(hotParticle);
+            Utilities.FixMixerGroups(hotParticle);
+
+            coldParticle = bundle.LoadAsset<GameObject>("Assets/Particles/ColdParticle.prefab");
+            NetworkPrefabs.RegisterNetworkPrefab(coldParticle);
+            Utilities.FixMixerGroups(coldParticle);
         }
 
         public static void LoadShaders()

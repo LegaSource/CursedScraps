@@ -1,5 +1,5 @@
 ﻿using BepInEx.Configuration;
-using CursedScraps.Behaviours;
+using CursedScraps.Behaviours.Curses;
 using System.Collections.Generic;
 
 namespace CursedScraps.Managers
@@ -14,15 +14,21 @@ namespace CursedScraps.Managers
         // HIDE MECHANIC
         public static ConfigEntry<bool> isRedScanOn;
         public static ConfigEntry<bool> isParticleOn;
+        public static ConfigEntry<bool> isHideLine;
         public static ConfigEntry<bool> isHideName;
         public static ConfigEntry<bool> isHideValue;
         // PENALTY MECHANIC
         public static ConfigEntry<string> penaltyMode;
         public static ConfigEntry<int> penaltyCounter;
-        // ANTI-CURSE PILLS
+        // HOLY WATER
         public static ConfigEntry<bool> isHolyWater;
         public static ConfigEntry<int> holyWaterRarity;
         public static ConfigEntry<int> maxHolyWater;
+        // OLD SCROLL
+        public static ConfigEntry<bool> isOldScrollSpawnable;
+        public static ConfigEntry<int> oldScrollRarity;
+        public static ConfigEntry<int> maxOldScroll;
+        public static ConfigEntry<float> oldScrollAura;
         // INHIBITION
         public static ConfigEntry<bool> isInhibition;
         public static ConfigEntry<float> inhibitionMultiplier;
@@ -62,10 +68,6 @@ namespace CursedScraps.Managers
         public static ConfigEntry<float> shadowMultiplier;
         public static ConfigEntry<string> shadowWeight;
         public static ConfigEntry<string> shadowExclusions;
-        // SYNCHRONIZATION
-        public static ConfigEntry<bool> isSynchronization;
-        public static ConfigEntry<float> synchronizationMultiplier;
-        public static ConfigEntry<string> synchronizationWeight;
         // DIMINUTIVE
         public static ConfigEntry<bool> isDiminutive;
         public static ConfigEntry<float> diminutiveMultiplier;
@@ -82,18 +84,19 @@ namespace CursedScraps.Managers
         public static ConfigEntry<bool> isCommunication;
         public static ConfigEntry<float> communicationMultiplier;
         public static ConfigEntry<string> communicationWeight;
-        public static ConfigEntry<int> communicationChrono;
+        public static ConfigEntry<float> communicationCooldown;
 
         internal static void Load()
         {
             // GLOBAL
-            globalChance = CursedScraps.configFile.Bind("_Global_", "Chance", "default:30", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            globalChance = CursedScraps.configFile.Bind("_Global_", "Chance", "default:20", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             globalPrevent = CursedScraps.configFile.Bind("_Global_", "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
             scrapExclusions = CursedScraps.configFile.Bind("_Global_", "Exclusion list", "", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
             isCurseInfoOn = CursedScraps.configFile.Bind("_Global_", "Curse info", true, "Does the information popup appear when a player is cursed?");
             // HIDE MECHANIC
             isRedScanOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable red scan", true, "Is red scan on cursed scraps enabled?");
             isParticleOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable particle", true, "Is cursed particle enabled?");
+            isHideLine = CursedScraps.configFile.Bind("_Hiding mechanic_", "Hide curse line", false, "Hide curse line in scan node");
             isHideName = CursedScraps.configFile.Bind("_Hiding mechanic_", "Hide curse name", false, "Replace the curse name with '???'");
             isHideValue = CursedScraps.configFile.Bind("_Hiding mechanic_", "Hide scrap value", false, "Replace the cursed scrap value with '???'");
             // PENALTY MECHANIC
@@ -101,11 +104,16 @@ namespace CursedScraps.Managers
                                                                                                              Constants.PENALTY_HARD + " - When the counter is reached, all players receive the curse of the next scrap scanned.\n" +
                                                                                                              Constants.PENALTY_MEDIUM + " - When the counter is reached, only the player who scans the next cursed scrap receives the curse.\n" +
                                                                                                              Constants.PENALTY_NONE + " - Never apply the penalty.");
-            penaltyCounter = CursedScraps.configFile.Bind("_Penalty mechanic_", "Counter", 5, "Number of cursed objects to be scanned before the next one affects the penalty.\nThe counter is reset after the penalty is applied.");
+            penaltyCounter = CursedScraps.configFile.Bind("_Penalty mechanic_", "Counter", 10, "Number of cursed objects to be scanned before the next one affects the penalty.\nThe counter is reset after the penalty is applied.");
             // HOLY WATER
             isHolyWater = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Enable", true, "Is " + Constants.HOLY_WATER + " item enabled?\nConsumable that removes all active curses on the player.");
-            holyWaterRarity = CursedScraps.configFile.Bind<int>(Constants.HOLY_WATER, "Rarity", 20, Constants.HOLY_WATER + " spawn rarity.");
-            maxHolyWater = CursedScraps.configFile.Bind<int>(Constants.HOLY_WATER, "Max spawn", 4, "Max " + Constants.HOLY_WATER + " to spawn");
+            holyWaterRarity = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Rarity", 20, Constants.HOLY_WATER + " spawn rarity.");
+            maxHolyWater = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Max spawn", 4, "Max " + Constants.HOLY_WATER + " to spawn");
+            // OLD SCROLL
+            isOldScrollSpawnable = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Spawnable", true, "Is " + Constants.OLD_SCROLL + " item enabled?\nConsumable that shows the aura of the entrances.");
+            oldScrollRarity = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Rarity", 20, Constants.OLD_SCROLL + " spawn rarity.");
+            maxOldScroll = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Max spawn", 2, "Max " + Constants.OLD_SCROLL + " to spawn");
+            oldScrollAura = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Aura duration", 10f, "Duration for which the door's aura is visible through walls");
             // INHIBITION
             isInhibition = CursedScraps.configFile.Bind(Constants.INHIBITION, "Enable", true, "Is " + Constants.INHIBITION + " curse enabled?\nPrevents the player from jumping and crouching.");
             inhibitionMultiplier = CursedScraps.configFile.Bind(Constants.INHIBITION, "Multiplier", 2.7f, "Value multiplier for scraps with the " + Constants.INHIBITION + " curse.");
@@ -145,10 +153,6 @@ namespace CursedScraps.Managers
             shadowMultiplier = CursedScraps.configFile.Bind(Constants.SHADOW, "Multiplier", 2.4f, "Value multiplier for scraps with the " + Constants.SHADOW + " curse.");
             shadowWeight = CursedScraps.configFile.Bind(Constants.SHADOW, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.SHADOW + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             shadowExclusions = CursedScraps.configFile.Bind(Constants.SHADOW, "Exclusion list", "Masked", "List of creatures that will not be affected by the " + Constants.SHADOW + " curse.\nYou can add enemies by separating them with a comma.");
-            // SYNCHRONIZATION
-            isSynchronization = CursedScraps.configFile.Bind(Constants.SYNCHRONIZATION, "Enable", true, "Is " + Constants.SYNCHRONIZATION + " curse enabled?\nThe scrap is split into two parts, when both parts are picked up by two different players, their cameras invert.");
-            synchronizationMultiplier = CursedScraps.configFile.Bind(Constants.SYNCHRONIZATION, "Multiplier", 7f, "Value multiplier for scraps with the " + Constants.SYNCHRONIZATION + " curse.");
-            synchronizationWeight = CursedScraps.configFile.Bind(Constants.SYNCHRONIZATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.SYNCHRONIZATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             // DIMINUTIVE
             isDiminutive = CursedScraps.configFile.Bind(Constants.DIMINUTIVE, "Enable", true, "Is " + Constants.DIMINUTIVE + " curse enabled?\nReduces the player's size.");
             diminutiveMultiplier = CursedScraps.configFile.Bind(Constants.DIMINUTIVE, "Multiplier", 3f, "Value multiplier for scraps with the " + Constants.DIMINUTIVE + " curse.");
@@ -165,25 +169,24 @@ namespace CursedScraps.Managers
             isCommunication = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Enable", true, "Is " + Constants.COMMUNICATION + " curse enabled?\nThis curse affects two players in two stages. See README for more details.");
             communicationMultiplier = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Multiplier", 4f, "Value multiplier for scraps with the " + Constants.COMMUNICATION + " curse.");
             communicationWeight = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.COMMUNICATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
-            communicationChrono = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Chrono", 120, "Time limit for both players to return to the ship.");
+            communicationCooldown = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Cooldown duration", 10f, "Cooldown duration per player for sending indications to the cursed player (hot/cold particles).");
         }
 
         internal static List<CurseEffect> GetCurseEffectsFromConfig()
         {
             List<CurseEffect> curseEffects = new List<CurseEffect>();
-            if (isInhibition.Value) curseEffects.Add(new CurseEffect(Constants.INHIBITION, inhibitionMultiplier.Value, inhibitionWeight.Value, false));
-            if (isConfusion.Value) curseEffects.Add(new CurseEffect(Constants.CONFUSION, confusionMultiplier.Value, confusionWeight.Value, false));
-            if (isCaptive.Value) curseEffects.Add(new CurseEffect(Constants.CAPTIVE, captiveMultiplier.Value, captiveWeight.Value, false));
-            if (isBlurry.Value) curseEffects.Add(new CurseEffect(Constants.BLURRY, blurryMultiplier.Value, blurryWeight.Value, false));
-            if (isMute.Value) curseEffects.Add(new CurseEffect(Constants.MUTE, muteMultiplier.Value, muteWeight.Value, false));
-            if (isDeafness.Value) curseEffects.Add(new CurseEffect(Constants.DEAFNESS, deafnessMultiplier.Value, deafnessWeight.Value, false));
-            if (isErrant.Value) curseEffects.Add(new CurseEffect(Constants.ERRANT, errantMultiplier.Value, errantWeight.Value, false));
-            if (isParalysis.Value) curseEffects.Add(new CurseEffect(Constants.PARALYSIS, paralysisMultiplier.Value, paralysisWeight.Value, false));
-            if (isShadow.Value) curseEffects.Add(new CurseEffect(Constants.SHADOW, shadowMultiplier.Value, shadowWeight.Value, false));
-            if (isSynchronization.Value) curseEffects.Add(new CurseEffect(Constants.SYNCHRONIZATION, synchronizationMultiplier.Value, synchronizationWeight.Value, true));
-            if (isDiminutive.Value) curseEffects.Add(new CurseEffect(Constants.DIMINUTIVE, diminutiveMultiplier.Value, diminutiveWeight.Value, false));
-            if (isExploration.Value) curseEffects.Add(new CurseEffect(Constants.EXPLORATION, explorationMultiplier.Value, explorationWeight.Value, false));
-            if (isCommunication.Value) curseEffects.Add(new CurseEffect(Constants.COMMUNICATION, communicationMultiplier.Value, communicationWeight.Value, true));
+            if (isInhibition.Value) curseEffects.Add(new CurseEffect(Constants.INHIBITION, inhibitionMultiplier.Value, inhibitionWeight.Value));
+            if (isConfusion.Value) curseEffects.Add(new CurseEffect(Constants.CONFUSION, confusionMultiplier.Value, confusionWeight.Value));
+            if (isCaptive.Value) curseEffects.Add(new CurseEffect(Constants.CAPTIVE, captiveMultiplier.Value, captiveWeight.Value));
+            if (isBlurry.Value) curseEffects.Add(new CurseEffect(Constants.BLURRY, blurryMultiplier.Value, blurryWeight.Value));
+            if (isMute.Value) curseEffects.Add(new CurseEffect(Constants.MUTE, muteMultiplier.Value, muteWeight.Value));
+            if (isDeafness.Value) curseEffects.Add(new CurseEffect(Constants.DEAFNESS, deafnessMultiplier.Value, deafnessWeight.Value));
+            if (isErrant.Value) curseEffects.Add(new CurseEffect(Constants.ERRANT, errantMultiplier.Value, errantWeight.Value));
+            if (isParalysis.Value) curseEffects.Add(new CurseEffect(Constants.PARALYSIS, paralysisMultiplier.Value, paralysisWeight.Value));
+            if (isShadow.Value) curseEffects.Add(new CurseEffect(Constants.SHADOW, shadowMultiplier.Value, shadowWeight.Value));
+            if (isDiminutive.Value) curseEffects.Add(new CurseEffect(Constants.DIMINUTIVE, diminutiveMultiplier.Value, diminutiveWeight.Value));
+            if (isExploration.Value) curseEffects.Add(new CurseEffect(Constants.EXPLORATION, explorationMultiplier.Value, explorationWeight.Value));
+            if (isCommunication.Value) curseEffects.Add(new CurseEffect(Constants.COMMUNICATION, communicationMultiplier.Value, communicationWeight.Value));
 
             return curseEffects;
         }

@@ -2,20 +2,20 @@
 using CursedScraps.Patches;
 using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 
 namespace CursedScraps.Managers
 {
-    internal class CSHUDManager
+    internal class HUDCSManager
     {
         public static int timeOut = 5;
-        public static bool forceEndChrono = false;
+        //public static bool forceEndChrono = false;
 
-        public static IEnumerator StartTrackedScrapCoroutine()
+        public static IEnumerator StartTrackedItemCoroutine(PlayerCSBehaviour playerBehaviour)
         {
-            PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
             int timePassed = 0;
-            while (playerBehaviour.trackedScrap == null)
+            while (playerBehaviour.trackedItem == null)
             {
                 yield return new WaitForSeconds(1f);
                 timePassed++;
@@ -31,18 +31,19 @@ namespace CursedScraps.Managers
 
         private static bool IsTrackedEnded(ref PlayerCSBehaviour playerBehaviour)
         {
-            if (playerBehaviour.coopPlayer != null && playerBehaviour.trackedScrap != null)
+            if (playerBehaviour.trackedItem != null)
             {
-                HUDManagerPatch.chronoText.text = Math.Round(Vector3.Distance(playerBehaviour.coopPlayer.transform.position, playerBehaviour.trackedScrap.transform.position), 1).ToString();
+                Debug.Log(Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString());
+                HUDManagerPatch.distanceText.text = Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString();
             }
             else
             {
-                HUDManagerPatch.chronoText.text = "";
+                HUDManagerPatch.distanceText.text = "";
             }
-            return playerBehaviour.trackedScrap != null;
+            return playerBehaviour.trackedItem != null;
         }
 
-        public static IEnumerator StartChronoCoroutine(int seconds)
+        /*public static IEnumerator StartChronoCoroutine(int seconds)
         {
             // Reset du chrono si déjà utilisé avant: si fait après avec l'attente de 1 seconde on risque de ne jamais quitter cette coroutine
             forceEndChrono = false;
@@ -71,6 +72,31 @@ namespace CursedScraps.Managers
                 return true;
             }
             return false;
+        }*/
+
+        public static void RefreshCursesText(ref PlayerCSBehaviour playerBehaviour)
+        {
+            if (playerBehaviour != null)
+            {
+                string cursesName = null;
+                foreach (string curseName in playerBehaviour.activeCurses.Select(c => c.CurseName))
+                {
+                    if (!string.IsNullOrEmpty(cursesName))
+                    {
+                        cursesName += "\n";
+                    }
+                    cursesName += curseName;
+                }
+
+                if (!string.IsNullOrEmpty(cursesName))
+                {
+                    HUDManagerPatch.cursesText.text = cursesName;
+                }
+                else
+                {
+                    HUDManagerPatch.cursesText.text = "";
+                }
+            }
         }
     }
 }

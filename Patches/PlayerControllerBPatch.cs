@@ -1,4 +1,6 @@
 ﻿using CursedScraps.Behaviours;
+using CursedScraps.Behaviours.Curses;
+using CursedScraps.CustomInputs;
 using CursedScraps.Managers;
 using DunGen;
 using GameNetcodeStuff;
@@ -42,37 +44,6 @@ namespace CursedScraps.Patches
             }
         }
 
-        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.BeginGrabObject))]
-        [HarmonyPrefix]
-        private static bool PreGrabObject(ref PlayerControllerB __instance)
-        {
-            __instance.interactRay = new Ray(__instance.gameplayCamera.transform.position, __instance.gameplayCamera.transform.forward);
-            if (!Physics.Raycast(__instance.interactRay, out __instance.hit, __instance.grabDistance, __instance.interactableObjectsMask) || __instance.hit.collider.gameObject.layer == 8 || !(__instance.hit.collider.tag == "PhysicsProp") || __instance.twoHanded || __instance.sinkingValue > 0.73f || Physics.Linecast(__instance.gameplayCamera.transform.position, __instance.hit.collider.transform.position + __instance.transform.up * 0.16f, 1073741824, QueryTriggerInteraction.Ignore))
-            {
-                return true;
-            }
-            GrabbableObject grabbableObject = __instance.hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
-            if (grabbableObject != null)
-            {
-                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
-                {
-                    if (objectBehaviour.playerOwner != null && objectBehaviour.playerOwner != GameNetworkManager.Instance.localPlayerController)
-                    {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You are not the owner of this object.");
-                        return false;
-                    }
-                    if (objectBehaviour.curseEffects.FirstOrDefault(c => c.IsCoop) != null
-                        && __instance.GetComponent<PlayerCSBehaviour>().activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.CAPTIVE)) != null)
-                    {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You can't grab this object when you have the 'captive' curse.");
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.GrabObjectClientRpc))]
         [HarmonyPostfix]
         private static void PostGrabObject(ref PlayerControllerB __instance)
@@ -86,7 +57,7 @@ namespace CursedScraps.Patches
                     // Affectation des malédictions au joueur
                     foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
                     {
-                        CSPlayerManager.SetPlayerCurseEffect(__instance, curseEffect, true);
+                        PlayerCSManager.SetPlayerCurseEffect(__instance, curseEffect, true);
                     }
                 }
 
@@ -96,7 +67,7 @@ namespace CursedScraps.Patches
                 {
                     if (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.ERRANT)) != null)
                     {
-                        CSPlayerManager.TeleportPlayer(ref __instance);
+                        PlayerCSManager.TeleportPlayer(ref __instance);
                     }
                     if (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.DIMINUTIVE)) != null)
                     {
@@ -122,7 +93,7 @@ namespace CursedScraps.Patches
                     && __instance.playerBodyAnimator.GetBool("Jumping")
                     && !playerBehaviour.doubleJump)
                 {
-                    __instance.StartCoroutine(CSPlayerManager.PlayerDoubleJump(playerBehaviour));
+                    __instance.StartCoroutine(Diminutive.PlayerDoubleJump(playerBehaviour));
                     return false;
                 }
             }
@@ -163,26 +134,8 @@ namespace CursedScraps.Patches
                 if (objectBehaviour != null
                     && objectBehaviour.curseEffects.Count > 0)
                 {
-                    CurseEffect curseEffect = objectBehaviour.curseEffects.FirstOrDefault(c => c.IsCoop);
-                    if (curseEffect != null)
-                    {
-                        // Si objet coop en phase de recherche d'un joueur, on peut désactiver l'effet au drop
-                        if (objectBehaviour.playerOwner == null
-                            // Si l'effet est actif sur les deux joueurs, on peut drop l'objet seulement si les deux joueurs sont dans le vaisseau
-                            || (__instance.isInHangarShipRoom && playerBehaviour.coopPlayer.isInHangarShipRoom))
-                        {
-                            CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect);
-                        }
-                        // Sinon impossible de drop l'objet
-                        else
-                        {
-                            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to drop this object.");
-                            return false;
-                        }
-                    }
-
                     // Suppression des malédictions
-                    if (__instance.isInHangarShipRoom && CSPlayerManager.RemoveCoopEffects(ref objectBehaviour))
+                    if (__instance.isInHangarShipRoom)
                     {
                         CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>());
                     }
@@ -205,7 +158,7 @@ namespace CursedScraps.Patches
                 && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.ERRANT)) != null
                 && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.CAPTIVE)) == null)
             {
-                CSPlayerManager.TeleportPlayer(ref __instance);
+                PlayerCSManager.TeleportPlayer(ref __instance);
             }
         }
 
@@ -218,10 +171,10 @@ namespace CursedScraps.Patches
             {
                 if (__instance.isInHangarShipRoom)
                 {
-                    // Suppression des malédictions qui ne sont pas en coop
-                    foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.Where(c => !c.IsCoop).ToList())
+                    // Suppression des malédictions
+                    foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
                     {
-                        CSPlayerManager.SetPlayerCurseEffect(__instance, curseEffect, false);
+                        PlayerCSManager.SetPlayerCurseEffect(__instance, curseEffect, false);
                     }
                 }
 
@@ -258,23 +211,35 @@ namespace CursedScraps.Patches
             CursedScrapsNetworkManager.Instance.RemoveAllPlayerCurseEffectServerRpc((int)__instance.playerClientId);
         }
 
-        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.ItemTertiaryUse_performed))]
-        [HarmonyPostfix]
-        private static void TertiaryPressed(ref PlayerControllerB __instance)
+        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.TeleportPlayer))]
+        [HarmonyPrefix]
+        private static bool PreventTeleportPlayer(ref PlayerControllerB __instance)
         {
-            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null
-                && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.SYNCHRONIZATION)) != null
-                && playerBehaviour.coopPlayer != null)
+            if (__instance == GameNetworkManager.Instance.localPlayerController)
             {
-                // Seulement si l'objet synchronisé est équipé
-                ObjectCSBehaviour objectBehaviour = playerBehaviour.playerProperties.currentlyHeldObjectServer?.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null && objectBehaviour.curseEffects.FirstOrDefault(c => c.CurseName.Equals(Constants.SYNCHRONIZATION)) != null)
+                PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+                if (!__instance.isInsideFactory
+                    && playerBehaviour != null
+                    && (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.EXPLORATION)) != null
+                        || !Communication.CanEscape(ref playerBehaviour, "A curse prevented you from being teleported.")))
                 {
-                    Vector3 directionToPlayer = __instance.playerGlobalHead.transform.position - playerBehaviour.coopPlayer.transform.position;
-                    CursedScrapsNetworkManager.Instance.ForcePlayerRotationServerRpc((int)playerBehaviour.coopPlayer.playerClientId, directionToPlayer);
+                    __instance.isInElevator = false;
+                    __instance.isInHangarShipRoom = false;
+                    __instance.isInsideFactory = true;
+                    return false;
                 }
             }
+            return true;
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.SpectateNextPlayer))]
+        [HarmonyPostfix]
+        private static void SwitchSpectatedPlayer(ref PlayerControllerB __instance)
+        {
+            PlayerCSBehaviour playerBehaviour = __instance.spectatedPlayerScript?.GetComponent<PlayerCSBehaviour>();
+            HUDCSManager.RefreshCursesText(ref playerBehaviour);
+            Communication.ApplyCommunicationForDeadPlayer(ref playerBehaviour);
+            CommunicationInputs.Instance.EnableInputs();
         }
     }
 }

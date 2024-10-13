@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using CursedScraps.Behaviours.Curses;
+using GameNetcodeStuff;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,11 +16,8 @@ namespace CursedScraps.Behaviours
         // EXPLORATION
         public EntranceTeleport targetDoor;
         public bool isRendered = false;
-        // COOP CURSES
-        public PlayerControllerB coopPlayer;
         // COMMUNICATION
-        public GrabbableObject trackedScrap;
-        // SYNCHRONIZATION
-        public Vector2 inputLookVector = Vector2.zero;
+        public GrabbableObject trackedItem;
+        public bool canEscape = false;
     }
 }

@@ -1,4 +1,4 @@
-﻿using GameNetcodeStuff;
+﻿using CursedScraps.Behaviours.Curses;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,9 +9,5 @@ namespace CursedScraps.Behaviours
         public GrabbableObject objectProperties;
         public List<CurseEffect> curseEffects = new List<CurseEffect>();
         public GameObject particleEffect;
-        // COOP
-        public PlayerControllerB playerOwner;
-        public GrabbableObject mainPart;
-        public bool isSplitted = false;
     }
 }

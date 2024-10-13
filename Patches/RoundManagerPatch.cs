@@ -1,4 +1,5 @@
 ﻿using CursedScraps.Behaviours;
+using CursedScraps.Behaviours.Curses;
 using CursedScraps.Managers;
 using CursedScraps.Values;
 using GameNetcodeStuff;
@@ -40,7 +41,7 @@ namespace CursedScraps.Patches
                 {
                     if (new System.Random().Next(1, 100) <= customItem.Rarity)
                     {
-                        CSObjectManager.SpawnNewItem(ref roundManager, customItem.Item);
+                        ObjectCSManager.SpawnNewItem(ref roundManager, customItem.Item);
                     }
                 }
             }
@@ -90,10 +91,9 @@ namespace CursedScraps.Patches
 
         private static CurseEffect GetRandomCurseEffect(string planetName)
         {
-            bool isMultiplayer = StartOfRound.Instance.allPlayerScripts.Where(p => p.isPlayerControlled && !p.isTestingPlayer).Count() > 1;
             // Ajout des malédictions éligibles en fonction de leur valeur d'importance
             List<CurseEffect> eligibleEffects = new List<CurseEffect>();
-            foreach (CurseEffect effect in CursedScraps.curseEffects.Where(c => isMultiplayer || !c.IsCoop))
+            foreach (CurseEffect effect in CursedScraps.curseEffects)
             {
                 for (int i = 0; i < GetValueFromPair(effect.Weight, planetName); i++)
                 {
@@ -134,18 +134,6 @@ namespace CursedScraps.Patches
             return defaultValue;
         }
 
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.CollectNewScrapForThisRound))]
-        [HarmonyPrefix]
-        private static bool CollectScrap(ref GrabbableObject scrapObject)
-        {
-            ObjectCSBehaviour objectBehaviour = scrapObject.GetComponent<ObjectCSBehaviour>();
-            if (objectBehaviour != null && objectBehaviour.curseEffects.FirstOrDefault(c => c.IsCoop) != null)
-            {
-                return CSObjectManager.IsCloneOnShip(ref scrapObject);
-            }
-            return true;
-        }
-
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.DetectElevatorIsRunning))]
         [HarmonyPrefix]
         private static void EndGame()
@@ -155,12 +143,6 @@ namespace CursedScraps.Patches
             foreach (GrabbableObject grabbableObject in Object.FindObjectsOfType<GrabbableObject>().Where(g => g.isInElevator && (objectBehaviour = g.GetComponent<ObjectCSBehaviour>()) != null && objectBehaviour.curseEffects.Count > 0))
             {
                 CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(grabbableObject.GetComponent<NetworkObject>());
-            }
-            // Tuer les joueurs qui possèdent une malédiction en coop
-            PlayerCSBehaviour playerBehaviour;
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts.Where(p => (playerBehaviour = p.GetComponent<PlayerCSBehaviour>()) != null && playerBehaviour.activeCurses.FirstOrDefault(c => c.IsCoop) != null))
-            {
-                player.KillPlayer(Vector3.zero, spawnBody: true, CauseOfDeath.Unknown);
             }
         }
     }

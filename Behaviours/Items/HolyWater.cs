@@ -2,7 +2,7 @@
 using System.Linq;
 using Unity.Netcode;
 
-namespace CursedScraps.Behaviours
+namespace CursedScraps.Behaviours.Items
 {
     internal class HolyWater : PhysicsProp
     {

@@ -1,4 +1,6 @@
 ﻿using CursedScraps.Behaviours;
+using CursedScraps.Behaviours.Curses;
+using CursedScraps.Behaviours.Items;
 using GameNetcodeStuff;
 using System.Linq;
 using Unity.Netcode;
@@ -59,8 +61,16 @@ namespace CursedScraps.Managers
                     {
                         GameObject curseParticleEffect = Instantiate(CursedScraps.curseParticle, grabbableObject.transform.position, Quaternion.identity);
                         curseParticleEffect.transform.SetParent(grabbableObject.transform);
-                        curseParticleEffect.transform.localScale = grabbableObject.transform.localScale;
+                        float maxValue = Mathf.Max(grabbableObject.transform.localScale.x, Mathf.Max(grabbableObject.transform.localScale.y, grabbableObject.transform.localScale.z));
                         objectBehaviour.particleEffect = curseParticleEffect;
+
+                        ParticleSystem particleSystem = curseParticleEffect.GetComponent<ParticleSystem>();
+                        if (particleSystem != null)
+                        {
+                            ParticleSystem.MainModule mainModule = particleSystem.main;
+                            mainModule.startSize = maxValue;
+                            mainModule.startSpeed = maxValue / 3f;
+                        }
                     }
                 }
             }
@@ -73,14 +83,17 @@ namespace CursedScraps.Managers
                 scrapValue = "???";
             }
             string curseText = "";
-            foreach (CurseEffect curseEffect in objectCSBehaviour.curseEffects)
+            if (!ConfigManager.isHideLine.Value)
             {
-                string curseName = curseEffect.CurseName;
-                if (ConfigManager.isHideValue.Value)
+                foreach (CurseEffect curseEffect in objectCSBehaviour.curseEffects)
                 {
-                    curseName = "???";
+                    string curseName = curseEffect.CurseName;
+                    if (ConfigManager.isHideName.Value)
+                    {
+                        curseName = "???";
+                    }
+                    curseText += $"\nCurse: {curseName}";
                 }
-                curseText += $"\nCurse: {curseName}";
             }
             return $"Value: ${scrapValue}{curseText}";
         }
@@ -125,7 +138,7 @@ namespace CursedScraps.Managers
             if (curseEffect != null)
             {
                 PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-                CSPlayerManager.SetPlayerCurseEffect(player, curseEffect, enable);
+                PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, enable);
 
                 // Reset du compteur de pénalité
                 SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
@@ -149,15 +162,7 @@ namespace CursedScraps.Managers
             {
                 foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
                 {
-                    // Ne faire que chez le joueur concerné car la méthode possède déjà des méthodes Rpc
-                    if (player == GameNetworkManager.Instance.localPlayerController)
-                    {
-                        CSPlayerManager.DesactiveCoopEffect(ref playerBehaviour, curseEffect);
-                    }
-                    if (!curseEffect.IsCoop)
-                    {
-                        CSPlayerManager.SetPlayerCurseEffect(player, curseEffect, false);
-                    }
+                    PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, false);
                 }
             }
         }
@@ -252,135 +257,53 @@ namespace CursedScraps.Managers
             }
         }
 
-        // COOP
         [ServerRpc(RequireOwnership = false)]
-        public void SetCloneScrapServerRpc(NetworkObjectReference obj, NetworkObjectReference objClone, int playerId, string name, string nameReflection)
+        public void AssignTrackedItemServerRpc(int playerId, NetworkObjectReference obj)
         {
-            SetCloneScrapClientRpc(obj, objClone, playerId, name, nameReflection);
+            AssignTrackedItemClientRpc(playerId, obj);
         }
 
         [ClientRpc]
-        private void SetCloneScrapClientRpc(NetworkObjectReference obj, NetworkObjectReference objClone, int playerId, string name, string nameReflection)
-        {
-            if (obj.TryGet(out var networkObject) && objClone.TryGet(out var networkObjectClone))
-            {
-                GrabbableObject scrap = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
-                GrabbableObject cloneScrap = networkObjectClone.gameObject.GetComponentInChildren<GrabbableObject>();
-                if (scrap != null && cloneScrap != null)
-                {
-                    SetScrapCurseEffect(ref cloneScrap, name, false);
-                    ObjectCSBehaviour objectBehaviour = cloneScrap.GetComponent<ObjectCSBehaviour>();
-                    if (objectBehaviour != null)
-                    {
-                        objectBehaviour.mainPart = scrap;
-                        objectBehaviour.isSplitted = true;
-
-                        ScanNodeProperties scanNode = cloneScrap.gameObject.GetComponentInChildren<ScanNodeProperties>();
-                        if (scanNode != null)
-                        {
-                            cloneScrap.scrapValue = scrap.scrapValue;
-                            scanNode.scrapValue = scrap.scrapValue;
-                            scanNode.subText = scanNode.subText.Replace(name, nameReflection);
-
-                            // Spécifique pour COMMUNICATION
-                            PlayerCSBehaviour playerBehaviour = StartOfRound.Instance.allPlayerObjects[playerId].GetComponentInChildren<PlayerCSBehaviour>();
-                            if (name.Equals(Constants.COMMUNICATION))
-                            {
-                                objectBehaviour.playerOwner = playerBehaviour.coopPlayer;
-                                if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
-                                {
-                                    playerBehaviour.trackedScrap = cloneScrap;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void SetPlayerOwnerScrapServerRpc(NetworkObjectReference obj, int playerId)
-        {
-            SetPlayerOwnerScrapClientRpc(obj, playerId);
-        }
-
-        [ClientRpc]
-        private void SetPlayerOwnerScrapClientRpc(NetworkObjectReference obj, int playerId)
+        private void AssignTrackedItemClientRpc(int playerId, NetworkObjectReference obj)
         {
             if (obj.TryGet(out var networkObject))
             {
-                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
-                {
-                    objectBehaviour.playerOwner = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-                }
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void DesactiveCoopEffectServerRpc(int playerId, string curseName, bool isCoop)
-        {
-            DesactiveCoopEffectClientRpc(playerId, curseName, isCoop);
-        }
-
-        [ClientRpc]
-        private void DesactiveCoopEffectClientRpc(int playerId, string curseName, bool isCoop)
-        {
-            CurseEffect curseEffect = CursedScraps.curseEffects.Where(c => c.CurseName.Equals(curseName)).FirstOrDefault();
-            if (curseEffect != null)
-            {
+                GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
                 PlayerCSBehaviour playerBehaviour = StartOfRound.Instance.allPlayerObjects[playerId].GetComponentInChildren<PlayerCSBehaviour>();
-                if (playerBehaviour != null)
+                playerBehaviour.trackedItem = grabbableObject;
+
+                if (grabbableObject is OldScroll oldScroll)
                 {
-                    CSObjectManager.RemovePlayerOwner(ref playerBehaviour.playerProperties);
-                    if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
-                    {
-                        CSPlayerManager.EnablePlayerActions(ref curseEffect, true);
-                        if (isCoop)
-                        {
-                            playerBehaviour.playerProperties.DropAllHeldItemsAndSync();
-                        }
-                    }
-                    CSPlayerManager.SetPlayerCurseEffect(playerBehaviour.playerProperties, curseEffect, false);
+                    oldScroll.assignedPlayer = playerBehaviour.playerProperties;
                 }
             }
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void RemoveObjectCoopEffectServerRpc(NetworkObjectReference obj)
+        public void SpawnParticleServerRpc(int playerId, bool isHot)
         {
-            RemoveObjectCoopEffectClientRpc(obj);
+            SpawnParticleClientRpc(playerId, isHot);
         }
 
         [ClientRpc]
-        private void RemoveObjectCoopEffectClientRpc(NetworkObjectReference obj)
-        {
-            if (obj.TryGet(out var networkObject))
-            {
-                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
-                {
-                    objectBehaviour.playerOwner = null;
-                    objectBehaviour.mainPart = null;
-                    objectBehaviour.isSplitted = false;
-                }
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void ForcePlayerRotationServerRpc(int playerId, Vector3 direction)
-        {
-            ForcePlayerRotationClientRpc(playerId, direction);
-        }
-
-        [ClientRpc]
-        private void ForcePlayerRotationClientRpc(int playerId, Vector3 direction)
+        public void SpawnParticleClientRpc(int playerId, bool isHot)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-            if (player == GameNetworkManager.Instance.localPlayerController)
+
+            GameObject spawnObject;
+            if (isHot)
             {
-                player.transform.rotation = Quaternion.LookRotation(direction);
+                spawnObject = Instantiate(CursedScraps.hotParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
             }
+            else
+            {
+                spawnObject = Instantiate(CursedScraps.coldParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
+            }
+            spawnObject.transform.SetParent(player.transform);
+            spawnObject.transform.localScale = player.transform.localScale;
+
+            ParticleSystem particleSystem = spawnObject.GetComponent<ParticleSystem>();
+            Destroy(spawnObject, particleSystem.main.duration + particleSystem.main.startLifetime.constantMax);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -402,20 +325,6 @@ namespace CursedScraps.Managers
                     sorBehaviour.scannedObjects.Add(objectBehaviour.objectProperties);
                 }
             }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void ResetPenaltyCounterServerRpc()
-        {
-            ResetPenaltyCounterClientRpc();
-        }
-
-        [ClientRpc]
-        private void ResetPenaltyCounterClientRpc()
-        {
-            SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
-            sorBehaviour.counter = 0;
-            sorBehaviour.scannedObjects.Clear();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CursedScraps.Behaviours;
+using CursedScraps.CustomInputs;
 using CursedScraps.Managers;
 using GameNetcodeStuff;
 using HarmonyLib;
@@ -49,6 +50,13 @@ namespace CursedScraps.Patches
                     playerBehaviour.playerProperties = player;
                 }
             }
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ReviveDeadPlayers))]
+        [HarmonyPostfix]
+        private static void ReviveDeadPlayers()
+        {
+            CommunicationInputs.Instance.DisableInputs();
         }
     }
 }

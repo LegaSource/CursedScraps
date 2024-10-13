@@ -2,6 +2,9 @@
 using UnityEngine;
 using System.Linq;
 using CursedScraps.Behaviours;
+using HarmonyLib;
+using UnityEngine.ProBuilder;
+using System.Collections.Generic;
 
 namespace CursedScraps.Managers
 {
@@ -46,6 +49,27 @@ namespace CursedScraps.Managers
 
             wallhackPass = CustomPassVolume.customPasses.Find(pass => pass is WallhackCustomPass) as WallhackCustomPass;
             wallhackPass?.SetTargetRenderers(doorRenderers, CursedScraps.wallhackShader);
+        }
+
+        public static void SetupCustomPassForDoors(bool isEntrance)
+        {
+            List<Renderer> doorRenderers = new List<Renderer>();
+            foreach (EntranceTeleport entranceTeleport in FindObjectsOfType<EntranceTeleport>().Where(e => e.isEntranceToBuilding == isEntrance))
+            {
+                doorRenderers.AddRange(FindObjectsOfType<Renderer>()
+                    .Where(r => Vector3.Distance(r.transform.position, entranceTeleport.transform.position) < 2f
+                                && ConfigManager.explorationRendererNames.Value.Contains(r.name))
+                    .ToArray());
+            }
+
+            if (CustomPassVolume == null)
+            {
+                CursedScraps.mls.LogError("CustomPassVolume is not assigned.");
+                return;
+            }
+
+            wallhackPass = CustomPassVolume.customPasses.Find(pass => pass is WallhackCustomPass) as WallhackCustomPass;
+            wallhackPass?.SetTargetRenderers(doorRenderers.ToArray(), CursedScraps.wallhackShader);
         }
 
         public static void RemoveAuraFromDoor()
