@@ -14,6 +14,7 @@ using CursedScraps.Patches.ModsPatches;
 using System;
 using CursedScraps.Behaviours.Items;
 using CursedScraps.Behaviours.Curses;
+using CursedScraps.CustomInputs;
 
 namespace CursedScraps
 {
@@ -43,6 +44,7 @@ namespace CursedScraps
             configFile = Config;
             ConfigManager.Load();
             curseEffects = ConfigManager.GetCurseEffectsFromConfig();
+            _ = CommunicationInputs.Instance;
 
             LoadManager();
             NetcodePatcher();

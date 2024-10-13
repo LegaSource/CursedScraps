@@ -13,7 +13,7 @@ namespace CursedScraps.Patches
 {
     internal class HUDManagerPatch
     {
-        public static TextMeshProUGUI chronoText;
+        //public static TextMeshProUGUI chronoText;
         public static TextMeshProUGUI distanceText;
         public static TextMeshProUGUI cursesText;
 
@@ -21,14 +21,14 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void StartHUDManager(HUDManager __instance)
         {
-            GameObject chrono = Object.Instantiate(__instance.weightCounterAnimator.gameObject, __instance.weightCounterAnimator.transform.parent);
+            /*GameObject chrono = Object.Instantiate(__instance.weightCounterAnimator.gameObject, __instance.weightCounterAnimator.transform.parent);
             chrono.transform.localPosition += new Vector3(-85f, 185f, 0f);
             chrono.name = "ChronoUI";
 
             chronoText = chrono.GetComponentInChildren<TextMeshProUGUI>();
             chronoText.text = "";
             chronoText.alignment = TextAlignmentOptions.BottomLeft;
-            chronoText.name = "Chrono";
+            chronoText.name = "Chrono";*/
 
 
             GameObject distance = new GameObject("DistanceUI");

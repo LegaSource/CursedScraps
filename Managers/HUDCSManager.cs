@@ -33,7 +33,6 @@ namespace CursedScraps.Managers
         {
             if (playerBehaviour.trackedItem != null)
             {
-                Debug.Log(Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString());
                 HUDManagerPatch.distanceText.text = Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString();
             }
             else

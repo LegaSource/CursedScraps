@@ -11,28 +11,24 @@ namespace CursedScraps.CustomInputs
 {
     public class CommunicationInputs : LcInputActions
     {
-        public static readonly CommunicationInputs Instance = new();
-        public InputAction HotParticleKey => Asset["hotparticlekey"];
-        public InputAction ColdParticleKey => Asset["coldparticlekey"];
-        public bool isOnCooldown = false;
-
-        public override void CreateInputActions(in InputActionMapBuilder builder)
+        private static CommunicationInputs instance;
+        public static CommunicationInputs Instance
         {
-            builder.NewActionBinding()
-                .WithActionId("hotparticlekey")
-                .WithActionType(InputActionType.Button)
-                .WithKeyboardControl(KeyboardControl.H)
-                .WithGamepadControl(GamepadControl.ButtonNorth)
-                .WithBindingName("HotParticle")
-                .Finish();
-            builder.NewActionBinding()
-                .WithActionId("coldparticlekey")
-                .WithActionType(InputActionType.Button)
-                .WithKeyboardControl(KeyboardControl.C)
-                .WithGamepadControl(GamepadControl.ButtonNorth)
-                .WithBindingName("ColdParticle")
-                .Finish();
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new CommunicationInputs();
+                }
+                return instance;
+            }
+            private set { instance = value; }
         }
+        [InputAction(KeyboardControl.H, GamepadControl = GamepadControl.ButtonNorth, Name = "Communication - Hot Particle")]
+        public InputAction HotParticleKey { get; set; }
+        [InputAction(KeyboardControl.C, GamepadControl = GamepadControl.ButtonSouth, Name = "Communication - Cold Particle")]
+        public InputAction ColdParticleKey { get; set; }
+        public bool isOnCooldown = false;
 
         public void EnableInputs()
         {

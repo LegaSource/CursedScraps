@@ -5,6 +5,7 @@ using GameNetcodeStuff;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem.Utilities;
 
 namespace CursedScraps.Managers
 {
@@ -59,9 +60,12 @@ namespace CursedScraps.Managers
 
                     if (ConfigManager.isParticleOn.Value)
                     {
+                        float maxValue = Mathf.Max(grabbableObject.transform.localScale.x, Mathf.Max(grabbableObject.transform.localScale.y, grabbableObject.transform.localScale.z));
+                        if (maxValue < ConfigManager.minParticleScale.Value) maxValue = ConfigManager.minParticleScale.Value;
+                        else if (maxValue > ConfigManager.maxParticleScale.Value) maxValue = ConfigManager.maxParticleScale.Value;
+
                         GameObject curseParticleEffect = Instantiate(CursedScraps.curseParticle, grabbableObject.transform.position, Quaternion.identity);
                         curseParticleEffect.transform.SetParent(grabbableObject.transform);
-                        float maxValue = Mathf.Max(grabbableObject.transform.localScale.x, Mathf.Max(grabbableObject.transform.localScale.y, grabbableObject.transform.localScale.z));
                         objectBehaviour.particleEffect = curseParticleEffect;
 
                         ParticleSystem particleSystem = curseParticleEffect.GetComponent<ParticleSystem>();

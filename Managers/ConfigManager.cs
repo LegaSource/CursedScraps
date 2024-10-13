@@ -11,6 +11,8 @@ namespace CursedScraps.Managers
         public static ConfigEntry<bool> globalPrevent;
         public static ConfigEntry<string> scrapExclusions;
         public static ConfigEntry<bool> isCurseInfoOn;
+        public static ConfigEntry<float> minParticleScale;
+        public static ConfigEntry<float> maxParticleScale;
         // HIDE MECHANIC
         public static ConfigEntry<bool> isRedScanOn;
         public static ConfigEntry<bool> isParticleOn;
@@ -91,8 +93,10 @@ namespace CursedScraps.Managers
             // GLOBAL
             globalChance = CursedScraps.configFile.Bind("_Global_", "Chance", "default:20", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             globalPrevent = CursedScraps.configFile.Bind("_Global_", "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
-            scrapExclusions = CursedScraps.configFile.Bind("_Global_", "Exclusion list", "", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
+            scrapExclusions = CursedScraps.configFile.Bind("_Global_", "Exclusion list", "Key", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
             isCurseInfoOn = CursedScraps.configFile.Bind("_Global_", "Curse info", true, "Does the information popup appear when a player is cursed?");
+            minParticleScale = CursedScraps.configFile.Bind("_Global_", "Min particle scale", 0.1f, "Min cursed particle scale.");
+            maxParticleScale = CursedScraps.configFile.Bind("_Global_", "Max particle scale", 1f, "Max cursed particle scale.");
             // HIDE MECHANIC
             isRedScanOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable red scan", true, "Is red scan on cursed scraps enabled?");
             isParticleOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable particle", true, "Is cursed particle enabled?");
