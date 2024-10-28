@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CursedScraps.Behaviours
 {
-    internal class WallhackCustomPass : CustomPass
+    public class WallhackCustomPass : CustomPass
     {
         public Material wallhackMaterial;
         private List<Renderer> targetRenderers = new List<Renderer>();

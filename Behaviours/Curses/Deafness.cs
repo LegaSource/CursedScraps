@@ -1,6 +1,6 @@
 ﻿namespace CursedScraps.Behaviours.Curses
 {
-    internal class Deafness
+    public class Deafness
     {
         private static float savedMasterVolume = 0f;
 

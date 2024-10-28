@@ -9,7 +9,7 @@ using UnityEngine.InputSystem.Utilities;
 
 namespace CursedScraps.Managers
 {
-    internal class CursedScrapsNetworkManager : NetworkBehaviour
+    public class CursedScrapsNetworkManager : NetworkBehaviour
     {
         public static CursedScrapsNetworkManager Instance;
 
@@ -143,11 +143,6 @@ namespace CursedScraps.Managers
             {
                 PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
                 PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, enable);
-
-                // Reset du compteur de pénalité
-                SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
-                sorBehaviour.counter = 0;
-                sorBehaviour.scannedObjects.Clear();
             }
         }
 

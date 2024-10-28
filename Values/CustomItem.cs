@@ -8,10 +8,11 @@ namespace CursedScraps.Values
         public Type Type { get; internal set; }
         public Item Item { get; internal set; }
         public bool IsSpawnable { get; internal set; }
+        public int MinSpawn { get; private set; }
         public int MaxSpawn { get; private set; }
         public int Rarity { get; internal set; }
 
-        public CustomItem(bool isEnabled, Type type, Item item, bool isSpawnable, int maxSpawn, int rarity)
+        public CustomItem(bool isEnabled, Type type, Item item, bool isSpawnable, int minSpawn, int maxSpawn, int rarity)
         {
             IsEnabled = isEnabled;
             Type = type;

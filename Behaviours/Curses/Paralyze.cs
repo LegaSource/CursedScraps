@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CursedScraps.Behaviours.Curses
 {
-    internal class Paralyze
+    public class Paralyze
     {
         public static void ApplyParalyze(ref PlayerCSBehaviour playerBehaviour)
         {

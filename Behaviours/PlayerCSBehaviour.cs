@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CursedScraps.Behaviours
 {
-    internal class PlayerCSBehaviour : MonoBehaviour
+    public class PlayerCSBehaviour : MonoBehaviour
     {
         public PlayerControllerB playerProperties;
         public List<CurseEffect> activeCurses = new List<CurseEffect>();

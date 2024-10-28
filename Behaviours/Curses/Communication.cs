@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CursedScraps.Behaviours.Curses
 {
-    internal class Communication
+    public class Communication
     {
         public static Coroutine trackedItemCoroutine;
 

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CursedScraps.Behaviours.Curses
 {
-    internal class Diminutive
+    public class Diminutive
     {
         public static void ApplyDiminutive(bool enable, ref PlayerCSBehaviour playerBehaviour)
         {

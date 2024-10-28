@@ -25,10 +25,12 @@ namespace CursedScraps.Managers
         // HOLY WATER
         public static ConfigEntry<bool> isHolyWater;
         public static ConfigEntry<int> holyWaterRarity;
+        public static ConfigEntry<int> minHolyWater;
         public static ConfigEntry<int> maxHolyWater;
         // OLD SCROLL
         public static ConfigEntry<bool> isOldScrollSpawnable;
         public static ConfigEntry<int> oldScrollRarity;
+        public static ConfigEntry<int> minOldScroll;
         public static ConfigEntry<int> maxOldScroll;
         public static ConfigEntry<float> oldScrollAura;
         // INHIBITION
@@ -112,10 +114,12 @@ namespace CursedScraps.Managers
             // HOLY WATER
             isHolyWater = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Enable", true, "Is " + Constants.HOLY_WATER + " item enabled?\nConsumable that removes all active curses on the player.");
             holyWaterRarity = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Rarity", 20, Constants.HOLY_WATER + " spawn rarity.");
+            minHolyWater = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Min spawn", 1, "Min " + Constants.HOLY_WATER + " to spawn"); 
             maxHolyWater = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Max spawn", 4, "Max " + Constants.HOLY_WATER + " to spawn");
             // OLD SCROLL
             isOldScrollSpawnable = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Spawnable", true, "Is " + Constants.OLD_SCROLL + " item enabled?\nConsumable that shows the aura of the entrances.");
             oldScrollRarity = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Rarity", 20, Constants.OLD_SCROLL + " spawn rarity.");
+            minOldScroll = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Min spawn", 1, "Min " + Constants.OLD_SCROLL + " to spawn"); 
             maxOldScroll = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Max spawn", 2, "Max " + Constants.OLD_SCROLL + " to spawn");
             oldScrollAura = CursedScraps.configFile.Bind(Constants.OLD_SCROLL, "Aura duration", 10f, "Duration for which the door's aura is visible through walls");
             // INHIBITION

@@ -2,7 +2,7 @@
 
 namespace CursedScraps.Behaviours.Curses
 {
-    internal class Mute
+    public class Mute
     {
         public static void ApplyMute(bool enable)
         {

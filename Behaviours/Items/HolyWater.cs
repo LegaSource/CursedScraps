@@ -4,7 +4,7 @@ using Unity.Netcode;
 
 namespace CursedScraps.Behaviours.Items
 {
-    internal class HolyWater : PhysicsProp
+    public class HolyWater : PhysicsProp
     {
         public override void ItemActivate(bool used, bool buttonDown = true)
         {

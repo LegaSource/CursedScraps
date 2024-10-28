@@ -1,13 +1,11 @@
 ﻿using CursedScraps.Behaviours;
 using CursedScraps.Behaviours.Curses;
-using CursedScraps.Patches;
 using GameNetcodeStuff;
-using System.Linq;
 using UnityEngine;
 
 namespace CursedScraps.Managers
 {
-    internal class PlayerCSManager
+    public class PlayerCSManager
     {
         public static void SetPlayerCurseEffect(PlayerControllerB player, CurseEffect curseEffect, bool enable)
         {
@@ -82,6 +80,11 @@ namespace CursedScraps.Managers
                 {
                     HUDCSManager.RefreshCursesText(ref playerBehaviour);
                 }
+                
+                // Reset du compteur de pénalité
+                SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+                sorBehaviour.counter = 0;
+                sorBehaviour.scannedObjects.Clear();
             }
         }
 

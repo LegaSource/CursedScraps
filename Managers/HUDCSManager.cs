@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CursedScraps.Managers
 {
-    internal class HUDCSManager
+    public class HUDCSManager
     {
         public static int timeOut = 5;
         //public static bool forceEndChrono = false;

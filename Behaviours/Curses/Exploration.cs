@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace CursedScraps.Behaviours.Curses
 {
-    internal class Exploration
+    public class Exploration
     {
         public static void ApplyExploration(bool enable, ref PlayerCSBehaviour playerBehaviour)
         {

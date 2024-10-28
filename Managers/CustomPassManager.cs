@@ -2,8 +2,6 @@
 using UnityEngine;
 using System.Linq;
 using CursedScraps.Behaviours;
-using HarmonyLib;
-using UnityEngine.ProBuilder;
 using System.Collections.Generic;
 
 namespace CursedScraps.Managers

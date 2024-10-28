@@ -1,6 +1,6 @@
 ﻿namespace CursedScraps
 {
-    internal class Constants
+    public class Constants
     {
         // Penalty mechanic
         public const string PENALTY_HARD = "Hard";

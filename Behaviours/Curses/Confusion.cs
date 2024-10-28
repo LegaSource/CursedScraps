@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 namespace CursedScraps.Behaviours.Curses
 {
-    internal class Confusion
+    public class Confusion
     {
         public static void ApplyConfusion(bool enable)
         {

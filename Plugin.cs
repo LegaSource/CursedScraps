@@ -23,7 +23,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.0.6";
+        private const string modVersion = "2.0.7";
 
         private readonly Harmony harmony = new Harmony(modGUID);
         private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -89,8 +89,8 @@ namespace CursedScraps
         {
             customItems = new List<CustomItem>
             {
-                new CustomItem(ConfigManager.isHolyWater.Value, typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value),
-                new CustomItem(true, typeof(OldScroll), bundle.LoadAsset<Item>("Assets/OldScroll/OldScrollItem.asset"), ConfigManager.isOldScrollSpawnable.Value, ConfigManager.maxOldScroll.Value, ConfigManager.oldScrollRarity.Value)
+                new CustomItem(ConfigManager.isHolyWater.Value, typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.minHolyWater.Value, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value),
+                new CustomItem(true, typeof(OldScroll), bundle.LoadAsset<Item>("Assets/OldScroll/OldScrollItem.asset"), ConfigManager.isOldScrollSpawnable.Value, ConfigManager.minOldScroll.Value, ConfigManager.maxOldScroll.Value, ConfigManager.oldScrollRarity.Value)
             };
 
             foreach (CustomItem customItem in customItems)

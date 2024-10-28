@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CursedScraps.Managers
 {
-    internal class ObjectCSManager
+    public class ObjectCSManager
     {
         public static int timeOut = 5;
 

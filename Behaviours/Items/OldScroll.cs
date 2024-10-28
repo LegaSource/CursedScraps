@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CursedScraps.Behaviours.Items
 {
-    internal class OldScroll : PhysicsProp
+    public class OldScroll : PhysicsProp
     {
         public PlayerControllerB assignedPlayer;
 
