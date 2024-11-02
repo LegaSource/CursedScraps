@@ -13,6 +13,7 @@ namespace CursedScraps.Managers
         public static ConfigEntry<bool> isCurseInfoOn;
         public static ConfigEntry<float> minParticleScale;
         public static ConfigEntry<float> maxParticleScale;
+        public static ConfigEntry<string> rendererNames;
         // HIDE MECHANIC
         public static ConfigEntry<bool> isRedScanOn;
         public static ConfigEntry<bool> isParticleOn;
@@ -83,7 +84,6 @@ namespace CursedScraps.Managers
         public static ConfigEntry<float> explorationMultiplier;
         public static ConfigEntry<string> explorationWeight;
         public static ConfigEntry<float> explorationDistance;
-        public static ConfigEntry<string> explorationRendererNames;
         // COMMUNICATION
         public static ConfigEntry<bool> isCommunication;
         public static ConfigEntry<float> communicationMultiplier;
@@ -99,6 +99,7 @@ namespace CursedScraps.Managers
             isCurseInfoOn = CursedScraps.configFile.Bind("_Global_", "Curse info", true, "Does the information popup appear when a player is cursed?");
             minParticleScale = CursedScraps.configFile.Bind("_Global_", "Min particle scale", 0.1f, "Min cursed particle scale.");
             maxParticleScale = CursedScraps.configFile.Bind("_Global_", "Max particle scale", 1f, "Max cursed particle scale.");
+            rendererNames = CursedScraps.configFile.Bind("_Global_", "Renderer names", "Cube.001,Cube.002,DoorMesh,Trigger,EntranceTeleport", "List of renderer names for displaying the door's aura, to use in case custom map doors have different names.");
             // HIDE MECHANIC
             isRedScanOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable red scan", true, "Is red scan on cursed scraps enabled?");
             isParticleOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable particle", true, "Is cursed particle enabled?");
@@ -172,7 +173,6 @@ namespace CursedScraps.Managers
             explorationMultiplier = CursedScraps.configFile.Bind(Constants.EXPLORATION, "Multiplier", 1.5f, "Value multiplier for scraps with the " + Constants.EXPLORATION + " curse.");
             explorationWeight = CursedScraps.configFile.Bind(Constants.EXPLORATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.EXPLORATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             explorationDistance = CursedScraps.configFile.Bind(Constants.EXPLORATION, "Distance", 30f, "Distance between the player and the door at which the door's aura disappears.");
-            explorationRendererNames = CursedScraps.configFile.Bind(Constants.EXPLORATION, "Renderer names", "Cube.001,Cube.002,DoorMesh,DoorMesh (1)", "List of renderer names for displaying the door's aura, used in case custom map doors have different names.");
             // COMMUNICATION
             isCommunication = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Enable", true, "Is " + Constants.COMMUNICATION + " curse enabled?\nThis curse affects two players in two stages. See README for more details.");
             communicationMultiplier = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Multiplier", 2f, "Value multiplier for scraps with the " + Constants.COMMUNICATION + " curse.");

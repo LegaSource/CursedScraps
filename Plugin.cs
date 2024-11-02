@@ -15,6 +15,7 @@ using System;
 using CursedScraps.Behaviours.Items;
 using CursedScraps.Behaviours.Curses;
 using CursedScraps.CustomInputs;
+using System.Linq;
 
 namespace CursedScraps
 {
@@ -23,7 +24,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.0.7";
+        private const string modVersion = "2.0.8";
 
         private readonly Harmony harmony = new Harmony(modGUID);
         private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -56,6 +57,7 @@ namespace CursedScraps
             harmony.PatchAll(typeof(StartOfRoundPatch));
             harmony.PatchAll(typeof(RoundManagerPatch));
             harmony.PatchAll(typeof(GrabbableObjectPatch));
+            harmony.PatchAll(typeof(BeltBagItemPatch));
             harmony.PatchAll(typeof(HUDManagerPatch));
             harmony.PatchAll(typeof(PlayerControllerBPatch));
             harmony.PatchAll(typeof(EnemyAIPatch));
@@ -87,25 +89,19 @@ namespace CursedScraps
 
         public static void LoadItems()
         {
-            customItems = new List<CustomItem>
-            {
-                new CustomItem(ConfigManager.isHolyWater.Value, typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.minHolyWater.Value, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value),
-                new CustomItem(true, typeof(OldScroll), bundle.LoadAsset<Item>("Assets/OldScroll/OldScrollItem.asset"), ConfigManager.isOldScrollSpawnable.Value, ConfigManager.minOldScroll.Value, ConfigManager.maxOldScroll.Value, ConfigManager.oldScrollRarity.Value)
-            };
+            if (ConfigManager.isHolyWater.Value) customItems.Add(new CustomItem(typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.minHolyWater.Value, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value));
+            customItems.Add(new CustomItem(typeof(OldScroll), bundle.LoadAsset<Item>("Assets/OldScroll/OldScrollItem.asset"), ConfigManager.isOldScrollSpawnable.Value, ConfigManager.minOldScroll.Value, ConfigManager.maxOldScroll.Value, ConfigManager.oldScrollRarity.Value));
 
-            foreach (CustomItem customItem in customItems)
+            foreach (CustomItem customItem in customItems.ToList())
             {
-                if (customItem.IsEnabled)
-                {
-                    var script = customItem.Item.spawnPrefab.AddComponent(customItem.Type) as PhysicsProp;
-                    script.grabbable = true;
-                    script.grabbableToEnemies = true;
-                    script.itemProperties = customItem.Item;
+                var script = customItem.Item.spawnPrefab.AddComponent(customItem.Type) as PhysicsProp;
+                script.grabbable = true;
+                script.grabbableToEnemies = true;
+                script.itemProperties = customItem.Item;
 
-                    NetworkPrefabs.RegisterNetworkPrefab(customItem.Item.spawnPrefab);
-                    Utilities.FixMixerGroups(customItem.Item.spawnPrefab);
-                    Items.RegisterItem(customItem.Item);
-                }
+                NetworkPrefabs.RegisterNetworkPrefab(customItem.Item.spawnPrefab);
+                Utilities.FixMixerGroups(customItem.Item.spawnPrefab);
+                Items.RegisterItem(customItem.Item);
             }
         }
 

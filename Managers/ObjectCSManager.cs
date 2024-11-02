@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using CursedScraps.Values;
+using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,20 @@ namespace CursedScraps.Managers
     public class ObjectCSManager
     {
         public static int timeOut = 5;
+
+        public static void AddNewItems(ref RoundManager roundManager)
+        {
+            foreach (CustomItem customItem in CursedScraps.customItems.Where(i => i.IsSpawnable))
+            {
+                for (int i = 0; i < customItem.MaxSpawn; i++)
+                {
+                    if (i < customItem.MinSpawn || new System.Random().Next(1, 100) <= customItem.Rarity)
+                    {
+                        SpawnNewItem(ref roundManager, customItem.Item);
+                    }
+                }
+            }
+        }
 
         public static void SpawnNewItem(ref RoundManager roundManager, Item itemToSpawn)
         {

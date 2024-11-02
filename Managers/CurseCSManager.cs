@@ -1,5 +1,6 @@
 ﻿using CursedScraps.Behaviours.Curses;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace CursedScraps.Managers
 {
@@ -39,6 +40,12 @@ namespace CursedScraps.Managers
                     eligibleEffects.Add(effect);
                 }
             }
+            // Suppression de EXPLORATION pour DevilMansion
+            if (RoundManager.Instance.dungeonGenerator.Generator.DungeonFlow.name.Equals("SDMLevel"))
+            {
+                eligibleEffects.RemoveAll(c => c.CurseName.Equals(Constants.EXPLORATION));
+            }
+            Debug.Log("GetEligibleCurseEffects dungeon name: " + RoundManager.Instance.dungeonGenerator.Generator.DungeonFlow.name);
             return eligibleEffects;
         }
 

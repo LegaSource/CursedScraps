@@ -28,21 +28,7 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void SpawnScraps(ref RoundManager __instance)
         {
-            AddNewItems(ref __instance);
-        }
-
-        private static void AddNewItems(ref RoundManager roundManager)
-        {
-            foreach (CustomItem customItem in CursedScraps.customItems.Where(i => i.IsSpawnable))
-            {
-                for (int i = 0; i < customItem.MaxSpawn; i++)
-                {
-                    if (i < customItem.MinSpawn || new System.Random().Next(1, 100) <= customItem.Rarity)
-                    {
-                        ObjectCSManager.SpawnNewItem(ref roundManager, customItem.Item);
-                    }
-                }
-            }
+            ObjectCSManager.AddNewItems(ref __instance);
         }
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SyncScrapValuesClientRpc))]

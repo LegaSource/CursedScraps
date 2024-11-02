@@ -237,9 +237,15 @@ namespace CursedScraps.Patches
         private static void SwitchSpectatedPlayer(ref PlayerControllerB __instance)
         {
             PlayerCSBehaviour playerBehaviour = __instance.spectatedPlayerScript?.GetComponent<PlayerCSBehaviour>();
-            HUDCSManager.RefreshCursesText(ref playerBehaviour);
-            Communication.ApplyCommunicationForDeadPlayer(ref playerBehaviour);
-            CommunicationInputs.Instance.EnableInputs();
+            if (playerBehaviour != null)
+            {
+                HUDCSManager.RefreshCursesText(ref playerBehaviour);
+                if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.COMMUNICATION)))
+                {
+                    Communication.ApplyCommunicationForDeadPlayer(ref playerBehaviour);
+                }
+                CommunicationInputs.Instance.EnableInputs();
+            }
         }
     }
 }

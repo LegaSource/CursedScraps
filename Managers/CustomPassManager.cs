@@ -35,8 +35,8 @@ namespace CursedScraps.Managers
         public static void SetupCustomPassForDoor(EntranceTeleport targetDoor)
         {
             Renderer[] doorRenderers = FindObjectsOfType<Renderer>()
-                .Where(r => Vector3.Distance(r.transform.position, targetDoor.transform.position) < 2f
-                            && ConfigManager.explorationRendererNames.Value.Contains(r.name))
+                .Where(r => Vector3.Distance(r.transform.position, targetDoor.transform.position) == 5f
+                            && ConfigManager.rendererNames.Value.Any(n => r.name.StartsWith(n)))
                 .ToArray();
 
             if (CustomPassVolume == null)
@@ -55,8 +55,8 @@ namespace CursedScraps.Managers
             foreach (EntranceTeleport entranceTeleport in FindObjectsOfType<EntranceTeleport>().Where(e => e.isEntranceToBuilding == isEntrance))
             {
                 doorRenderers.AddRange(FindObjectsOfType<Renderer>()
-                    .Where(r => Vector3.Distance(r.transform.position, entranceTeleport.transform.position) < 2f
-                                && ConfigManager.explorationRendererNames.Value.Contains(r.name))
+                    .Where(r => Vector3.Distance(r.transform.position, entranceTeleport.transform.position) == 5f
+                                && ConfigManager.rendererNames.Value.Any(n => r.name.StartsWith(n)))
                     .ToArray());
             }
 
