@@ -28,11 +28,10 @@ namespace CursedScraps.Behaviours.Curses
                 }
             }
         }
-        public static bool DestroyHeldObject(ref PlayerCSBehaviour playerBehaviour)
+        public static bool DestroyHeldObject(ref PlayerCSBehaviour playerBehaviour, ref GrabbableObject grabbableObject)
         {
             if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.FRAGILE)))
             {
-                GrabbableObject grabbableObject = playerBehaviour.playerProperties.currentlyHeldObjectServer;
                 if (grabbableObject != null && !ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName))
                 {
                     CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(grabbableObject.GetComponent<NetworkObject>());

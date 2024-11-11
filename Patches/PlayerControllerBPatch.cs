@@ -2,11 +2,9 @@
 using CursedScraps.Behaviours.Curses;
 using CursedScraps.CustomInputs;
 using CursedScraps.Managers;
-using DunGen;
 using GameNetcodeStuff;
 using HarmonyLib;
 using System.Linq;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace CursedScraps.Patches
@@ -48,34 +46,7 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void PostGrabObject(ref PlayerControllerB __instance)
         {
-            if (__instance.currentlyHeldObjectServer != null)
-            {
-                ObjectCSBehaviour objectBehaviour = __instance.currentlyHeldObjectServer.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
-                {
-                    CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), false);
-                    // Affectation des malédictions au joueur
-                    foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
-                    {
-                        PlayerCSManager.SetPlayerCurseEffect(__instance, curseEffect, true);
-                    }
-                }
-
-                // Comportements spécifiques pour les malédictions au moment du grab
-                PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-                if (playerBehaviour != null)
-                {
-                    if (!__instance.currentlyHeldObjectServer.itemProperties.itemName.Equals("Saw Tape")
-                        && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ERRANT)))
-                    {
-                        PlayerCSManager.TeleportPlayer(ref __instance);
-                    }
-                    if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.DIMINUTIVE)))
-                    {
-                        __instance.currentlyHeldObjectServer.transform.localScale = __instance.currentlyHeldObjectServer.originalScale / 5;
-                    }
-                }
-            }
+            ObjectCSManager.PostGrabObject(ref __instance, ref __instance.currentlyHeldObjectServer);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Jump_performed))]
@@ -120,54 +91,14 @@ namespace CursedScraps.Patches
         [HarmonyPrefix]
         private static bool PreDropObject(ref PlayerControllerB __instance)
         {
-            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
-            {
-                // Cas annulations du drop
-                if (!__instance.isInHangarShipRoom)
-                {
-                    if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE)))
-                    {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to drop this object.");
-                        return false;
-                    }
-
-                    if (!__instance.isCrouching && !__instance.currentlyHeldObjectServer.deactivated && Fragile.DestroyHeldObject(ref playerBehaviour))
-                    {
-                        return false;
-                    }
-                }
-
-                ObjectCSBehaviour objectBehaviour = __instance.currentlyHeldObjectServer.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null
-                    && objectBehaviour.curseEffects.Count > 0)
-                {
-                    // Suppression des malédictions
-                    if (__instance.isInHangarShipRoom)
-                    {
-                        CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>());
-                    }
-                    else
-                    {
-                        CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(__instance.currentlyHeldObjectServer.GetComponent<NetworkObject>(), true);
-                    }
-                }
-            }
-            return true;
+            return ObjectCSManager.PreDropObject(ref __instance, ref __instance.currentlyHeldObjectServer);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DiscardHeldObject))]
         [HarmonyPostfix]
         private static void PostDropObject(ref PlayerControllerB __instance)
         {
-            // Faire la tp après le drop pour que l'objet reste sur place
-            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null
-                && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ERRANT))
-                && !playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE)))
-            {
-                PlayerCSManager.TeleportPlayer(ref __instance);
-            }
+            ObjectCSManager.PostDropObject(ref __instance);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.PlayerHitGroundEffects))]

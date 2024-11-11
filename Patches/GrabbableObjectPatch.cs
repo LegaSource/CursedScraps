@@ -1,6 +1,5 @@
 ﻿using CursedScraps.Behaviours;
 using HarmonyLib;
-using System.Linq;
 
 namespace CursedScraps.Patches
 {
@@ -8,7 +7,7 @@ namespace CursedScraps.Patches
     {
         [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.Update))]
         [HarmonyPostfix]
-        private static void UpdateGrabbableObject(GrabbableObject __instance)
+        private static void UpdateGrabbableObject(ref GrabbableObject __instance)
         {
             ObjectCSBehaviour objectBehaviour = __instance.GetComponent<ObjectCSBehaviour>();
             if (objectBehaviour != null && objectBehaviour.particleEffect != null)
@@ -19,7 +18,7 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.SetScrapValue))]
         [HarmonyPrefix]
-        private static bool PreventOverrideCurseValue(GrabbableObject __instance)
+        private static bool PreventOverrideCurseValue(ref GrabbableObject __instance)
         {
             ObjectCSBehaviour objectBehaviour = __instance.GetComponent<ObjectCSBehaviour>();
             if (objectBehaviour != null && objectBehaviour.curseEffects.Count > 0)

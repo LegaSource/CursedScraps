@@ -57,6 +57,7 @@ namespace CursedScraps
             harmony.PatchAll(typeof(StartOfRoundPatch));
             harmony.PatchAll(typeof(RoundManagerPatch));
             harmony.PatchAll(typeof(GrabbableObjectPatch));
+            harmony.PatchAll(typeof(BeltBagInventoryUIPatch));
             harmony.PatchAll(typeof(BeltBagItemPatch));
             harmony.PatchAll(typeof(HUDManagerPatch));
             harmony.PatchAll(typeof(PlayerControllerBPatch));
@@ -107,17 +108,18 @@ namespace CursedScraps
 
         public static void LoadParticles()
         {
-            curseParticle = bundle.LoadAsset<GameObject>("Assets/Particles/CurseParticle.prefab");
-            NetworkPrefabs.RegisterNetworkPrefab(curseParticle);
-            Utilities.FixMixerGroups(curseParticle);
+            HashSet<GameObject> gameObjects = new HashSet<GameObject>
+            {
+                (curseParticle = bundle.LoadAsset<GameObject>("Assets/Particles/CurseParticle.prefab")),
+                (hotParticle = bundle.LoadAsset<GameObject>("Assets/Particles/HotParticle.prefab")),
+                (coldParticle = bundle.LoadAsset<GameObject>("Assets/Particles/ColdParticle.prefab"))
+            };
 
-            hotParticle = bundle.LoadAsset<GameObject>("Assets/Particles/HotParticle.prefab");
-            NetworkPrefabs.RegisterNetworkPrefab(hotParticle);
-            Utilities.FixMixerGroups(hotParticle);
-
-            coldParticle = bundle.LoadAsset<GameObject>("Assets/Particles/ColdParticle.prefab");
-            NetworkPrefabs.RegisterNetworkPrefab(coldParticle);
-            Utilities.FixMixerGroups(coldParticle);
+            foreach (GameObject gameObject in gameObjects)
+            {
+                NetworkPrefabs.RegisterNetworkPrefab(gameObject);
+                Utilities.FixMixerGroups(gameObject);
+            }
         }
 
         public static void LoadShaders()

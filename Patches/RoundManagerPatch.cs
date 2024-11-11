@@ -1,7 +1,6 @@
 ﻿using CursedScraps.Behaviours;
 using CursedScraps.Behaviours.Curses;
 using CursedScraps.Managers;
-using CursedScraps.Values;
 using HarmonyLib;
 using System.Linq;
 using Unity.Netcode;

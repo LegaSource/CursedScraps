@@ -1,4 +1,6 @@
-﻿using CursedScraps.Values;
+﻿using CursedScraps.Behaviours.Curses;
+using CursedScraps.Behaviours;
+using CursedScraps.Values;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
@@ -109,6 +111,88 @@ namespace CursedScraps.Managers
                 }
             }
             return false;
+        }
+
+        public static void PostGrabObject(ref PlayerControllerB player, ref GrabbableObject grabbableObject)
+        {
+            if (grabbableObject != null)
+            {
+                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
+                if (objectBehaviour != null)
+                {
+                    CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), false);
+                    // Affectation des malédictions au joueur
+                    foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
+                    {
+                        PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, true);
+                    }
+                }
+
+                // Comportements spécifiques pour les malédictions au moment du grab
+                PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
+                if (playerBehaviour != null)
+                {
+                    if (!grabbableObject.itemProperties.itemName.Equals("Saw Tape")
+                        && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ERRANT)))
+                    {
+                        PlayerCSManager.TeleportPlayer(ref player);
+                    }
+                    if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.DIMINUTIVE)))
+                    {
+                        grabbableObject.transform.localScale = grabbableObject.originalScale / 5;
+                    }
+                }
+            }
+        }
+
+        public static bool PreDropObject(ref PlayerControllerB player, ref GrabbableObject grabbableObject)
+        {
+            PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour != null)
+            {
+                // Cas annulations du drop
+                if (!player.isInHangarShipRoom)
+                {
+                    if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE)))
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to drop this object.");
+                        return false;
+                    }
+
+                    if (!player.isCrouching && !grabbableObject.deactivated && Fragile.DestroyHeldObject(ref playerBehaviour, ref grabbableObject))
+                    {
+                        return false;
+                    }
+                }
+
+                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
+                if (objectBehaviour != null
+                    && objectBehaviour.curseEffects.Count > 0)
+                {
+                    // Suppression des malédictions
+                    if (player.isInHangarShipRoom)
+                    {
+                        CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(grabbableObject.GetComponent<NetworkObject>());
+                    }
+                    else
+                    {
+                        CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), true);
+                    }
+                }
+            }
+            return true;
+        }
+
+        public static void PostDropObject(ref PlayerControllerB player)
+        {
+            // Faire la tp après le drop pour que l'objet reste sur place
+            PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour != null
+                && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ERRANT))
+                && !playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE)))
+            {
+                PlayerCSManager.TeleportPlayer(ref player);
+            }
         }
     }
 }
