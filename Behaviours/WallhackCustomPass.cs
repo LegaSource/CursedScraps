@@ -30,6 +30,8 @@ namespace CursedScraps.Behaviours
 
             foreach (Renderer renderer in targetRenderers)
             {
+                if (renderer == null || renderer.sharedMaterials == null) continue;
+
                 for (int i = 0; i < renderer.sharedMaterials.Length; i++)
                 {
                     ctx.cmd.DrawRenderer(renderer, wallhackMaterial);

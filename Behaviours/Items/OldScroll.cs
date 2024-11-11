@@ -23,8 +23,8 @@ namespace CursedScraps.Behaviours.Items
                     {
                         playerBehaviour.canEscape = true;
                     }
-                    // Si l'autre joueur possèdèe toujours la malédiction on n'utilise pas l'item sinon on peut
-                    else if (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.COMMUNICATION)) != null)
+                    // Si l'autre joueur possède toujours la malédiction on n'utilise pas l'item sinon on peut
+                    else if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.COMMUNICATION)))
                     {
                         HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "This item is assigned to another player");
                         return;

@@ -53,7 +53,7 @@ namespace CursedScraps.Behaviours.Curses
 
         public static bool CanEscape(ref PlayerCSBehaviour playerBehaviour, string message)
         {
-            if (playerBehaviour.activeCurses.FirstOrDefault(p => p.CurseName.Equals(Constants.COMMUNICATION)) != null && !playerBehaviour.canEscape)
+            if (playerBehaviour.activeCurses.Any(p => p.CurseName.Equals(Constants.COMMUNICATION)) && !playerBehaviour.canEscape)
             {
                 if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
                 {

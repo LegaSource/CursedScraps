@@ -35,7 +35,7 @@ namespace CursedScraps.Managers
         public static void SetupCustomPassForDoor(EntranceTeleport targetDoor)
         {
             Renderer[] doorRenderers = FindObjectsOfType<Renderer>()
-                .Where(r => Vector3.Distance(r.transform.position, targetDoor.transform.position) == 5f
+                .Where(r => Vector3.Distance(r.transform.position, targetDoor.transform.position) == 0f
                             && ConfigManager.rendererNames.Value.Any(n => r.name.StartsWith(n)))
                 .ToArray();
 
@@ -46,7 +46,13 @@ namespace CursedScraps.Managers
             }
 
             wallhackPass = CustomPassVolume.customPasses.Find(pass => pass is WallhackCustomPass) as WallhackCustomPass;
-            wallhackPass?.SetTargetRenderers(doorRenderers, CursedScraps.wallhackShader);
+            if (wallhackPass == null)
+            {
+                CursedScraps.mls.LogError("WallhackCustomPass could not be found in CustomPassVolume.");
+                return;
+            }
+
+            wallhackPass.SetTargetRenderers(doorRenderers, CursedScraps.wallhackShader);
         }
 
         public static void SetupCustomPassForDoors(bool isEntrance)
@@ -55,7 +61,7 @@ namespace CursedScraps.Managers
             foreach (EntranceTeleport entranceTeleport in FindObjectsOfType<EntranceTeleport>().Where(e => e.isEntranceToBuilding == isEntrance))
             {
                 doorRenderers.AddRange(FindObjectsOfType<Renderer>()
-                    .Where(r => Vector3.Distance(r.transform.position, entranceTeleport.transform.position) == 5f
+                    .Where(r => Vector3.Distance(r.transform.position, entranceTeleport.transform.position) == 0f
                                 && ConfigManager.rendererNames.Value.Any(n => r.name.StartsWith(n)))
                     .ToArray());
             }
@@ -67,7 +73,13 @@ namespace CursedScraps.Managers
             }
 
             wallhackPass = CustomPassVolume.customPasses.Find(pass => pass is WallhackCustomPass) as WallhackCustomPass;
-            wallhackPass?.SetTargetRenderers(doorRenderers.ToArray(), CursedScraps.wallhackShader);
+            if (wallhackPass == null)
+            {
+                CursedScraps.mls.LogError("WallhackCustomPass could not be found in CustomPassVolume.");
+                return;
+            }
+
+            wallhackPass.SetTargetRenderers(doorRenderers.ToArray(), CursedScraps.wallhackShader);
         }
 
         public static void RemoveAuraFromDoor()

@@ -65,11 +65,12 @@ namespace CursedScraps.Patches
                 PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
                 if (playerBehaviour != null)
                 {
-                    if (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.ERRANT)) != null)
+                    if (!__instance.currentlyHeldObjectServer.itemProperties.itemName.Equals("Saw Tape")
+                        && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ERRANT)))
                     {
                         PlayerCSManager.TeleportPlayer(ref __instance);
                     }
-                    if (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.DIMINUTIVE)) != null)
+                    if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.DIMINUTIVE)))
                     {
                         __instance.currentlyHeldObjectServer.transform.localScale = __instance.currentlyHeldObjectServer.originalScale / 5;
                     }
@@ -84,11 +85,11 @@ namespace CursedScraps.Patches
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
             if (playerBehaviour != null)
             {
-                if (playerBehaviour.activeCurses.Select(c => c.CurseName).Contains(Constants.INHIBITION) || playerBehaviour.actionsBlockedBy.Count > 0)
+                if ((!string.IsNullOrEmpty(playerBehaviour.blockedAction) && playerBehaviour.blockedAction.Equals("Jump")) || playerBehaviour.actionsBlockedBy.Count > 0)
                 {
                     return false;
                 }
-                else if (playerBehaviour.activeCurses.Select(c => c.CurseName).Contains(Constants.DIMINUTIVE)
+                else if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.DIMINUTIVE))
                     && !__instance.isExhausted
                     && __instance.playerBodyAnimator.GetBool("Jumping")
                     && !playerBehaviour.doubleJump)
@@ -107,7 +108,7 @@ namespace CursedScraps.Patches
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
             if (playerBehaviour != null)
             {
-                if (playerBehaviour.activeCurses.Select(c => c.CurseName).Contains(Constants.INHIBITION) || playerBehaviour.actionsBlockedBy.Count > 0)
+                if ((!string.IsNullOrEmpty(playerBehaviour.blockedAction) && playerBehaviour.blockedAction.Equals("Crouch")) || playerBehaviour.actionsBlockedBy.Count > 0)
                 {
                     return false;
                 }
@@ -123,11 +124,18 @@ namespace CursedScraps.Patches
             if (playerBehaviour != null)
             {
                 // Cas annulations du drop
-                if (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.CAPTIVE)) != null
-                    && !__instance.isInHangarShipRoom)
+                if (!__instance.isInHangarShipRoom)
                 {
-                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to drop this object.");
-                    return false;
+                    if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE)))
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to drop this object.");
+                        return false;
+                    }
+
+                    if (!__instance.isCrouching && !__instance.currentlyHeldObjectServer.deactivated && Fragile.DestroyHeldObject(ref playerBehaviour))
+                    {
+                        return false;
+                    }
                 }
 
                 ObjectCSBehaviour objectBehaviour = __instance.currentlyHeldObjectServer.GetComponent<ObjectCSBehaviour>();
@@ -155,10 +163,21 @@ namespace CursedScraps.Patches
             // Faire la tp après le drop pour que l'objet reste sur place
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
             if (playerBehaviour != null
-                && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.ERRANT)) != null
-                && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.CAPTIVE)) == null)
+                && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ERRANT))
+                && !playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE)))
             {
                 PlayerCSManager.TeleportPlayer(ref __instance);
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.PlayerHitGroundEffects))]
+        [HarmonyPostfix]
+        private static void PlayerFall(ref PlayerControllerB __instance)
+        {
+            if (__instance.fallValueUncapped < -20f && !__instance.isSpeedCheating)
+            {
+                PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+                Fragile.DestroyHeldObjects(ref playerBehaviour);
             }
         }
 
@@ -180,14 +199,14 @@ namespace CursedScraps.Patches
 
                 // Gestion de la collision pour DIMINUTIVE
                 if (__instance == GameNetworkManager.Instance.localPlayerController
-                    && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.DIMINUTIVE)) == null)
+                    && !playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.DIMINUTIVE)))
                 {
                     foreach (Collider collider in Physics.OverlapSphere(__instance.transform.position, 0.65f, StartOfRound.Instance.playersMask))
                     {
                         PlayerCSBehaviour playerBehaviourPushed = collider.GetComponent<PlayerControllerB>()?.GetComponent<PlayerCSBehaviour>();
                         if (playerBehaviourPushed != null
                             && playerBehaviourPushed.playerProperties != __instance
-                            && playerBehaviourPushed.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.DIMINUTIVE)) != null)
+                            && playerBehaviourPushed.activeCurses.Any(c => c.CurseName.Equals(Constants.DIMINUTIVE)))
                         {
                             if (__instance.isFallingFromJump)
                             {
@@ -202,6 +221,18 @@ namespace CursedScraps.Patches
                     }
                 }
             }
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
+        [HarmonyPostfix]
+        private static void DamagePlayer(ref PlayerControllerB __instance)
+        {
+            if (!__instance.IsOwner || __instance.isPlayerDead || !__instance.AllowPlayerDeath())
+            {
+                return;
+            }
+            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+            Fragile.DestroyHeldObjects(ref playerBehaviour);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer))]
@@ -220,7 +251,7 @@ namespace CursedScraps.Patches
                 PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
                 if (!__instance.isInsideFactory
                     && playerBehaviour != null
-                    && (playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.EXPLORATION)) != null
+                    && (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.EXPLORATION))
                         || !Communication.CanEscape(ref playerBehaviour, "A curse prevented you from being teleported.")))
                 {
                     __instance.isInElevator = false;

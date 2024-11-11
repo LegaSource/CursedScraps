@@ -75,7 +75,7 @@ namespace CursedScraps.Patches
             {
                 PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
                 if (playerBehaviour != null
-                    && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.PARALYSIS)) != null
+                    && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.PARALYSIS))
                     && node.nodeType == 1)
                 {
                     Paralyze.ApplyParalyze(ref playerBehaviour);
@@ -119,7 +119,7 @@ namespace CursedScraps.Patches
         private static void UpdateScreenFilters(ref Volume ___drunknessFilter)
         {
             PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.BLURRY)) != null)
+            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.BLURRY)))
             {
                 ___drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
             }
@@ -138,7 +138,7 @@ namespace CursedScraps.Patches
             if (entranceTeleport != null)
             {
                 // EXPLORATION
-                if (playerBehaviour.activeCurses.FirstOrDefault(p => p.CurseName.Equals(Constants.EXPLORATION)) != null)
+                if (playerBehaviour.activeCurses.Any(p => p.CurseName.Equals(Constants.EXPLORATION)))
                 {
                     if (entranceTeleport != playerBehaviour.targetDoor)
                     {

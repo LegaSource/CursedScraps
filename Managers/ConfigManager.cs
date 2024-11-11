@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace CursedScraps.Managers
 {
-    internal class ConfigManager
+    public class ConfigManager
     {
         // GLOBAL
         public static ConfigEntry<string> globalChance;
@@ -38,6 +38,9 @@ namespace CursedScraps.Managers
         public static ConfigEntry<bool> isInhibition;
         public static ConfigEntry<float> inhibitionMultiplier;
         public static ConfigEntry<string> inhibitionWeight;
+        public static ConfigEntry<bool> isInhibitionTip;
+        public static ConfigEntry<float> inhibitionCooldown;
+        public static ConfigEntry<string> inhibitionActions;
         // CONFUSION
         public static ConfigEntry<bool> isConfusion;
         public static ConfigEntry<float> confusionMultiplier;
@@ -89,29 +92,34 @@ namespace CursedScraps.Managers
         public static ConfigEntry<float> communicationMultiplier;
         public static ConfigEntry<string> communicationWeight;
         public static ConfigEntry<float> communicationCooldown;
+        // FRAGILE
+        public static ConfigEntry<bool> isFragile;
+        public static ConfigEntry<float> fragileMultiplier;
+        public static ConfigEntry<string> fragileWeight;
+        public static ConfigEntry<string> fragileExclusions;
 
-        internal static void Load()
+        public static void Load()
         {
             // GLOBAL
-            globalChance = CursedScraps.configFile.Bind("_Global_", "Chance", "default:15", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
-            globalPrevent = CursedScraps.configFile.Bind("_Global_", "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
-            scrapExclusions = CursedScraps.configFile.Bind("_Global_", "Exclusion list", "Key", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
-            isCurseInfoOn = CursedScraps.configFile.Bind("_Global_", "Curse info", true, "Does the information popup appear when a player is cursed?");
-            minParticleScale = CursedScraps.configFile.Bind("_Global_", "Min particle scale", 0.1f, "Min cursed particle scale.");
-            maxParticleScale = CursedScraps.configFile.Bind("_Global_", "Max particle scale", 1f, "Max cursed particle scale.");
-            rendererNames = CursedScraps.configFile.Bind("_Global_", "Renderer names", "Cube.001,Cube.002,DoorMesh,Trigger,EntranceTeleport", "List of renderer names for displaying the door's aura, to use in case custom map doors have different names.");
+            globalChance = CursedScraps.configFile.Bind(Constants.GLOBAL, "Chance", "default:15", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            globalPrevent = CursedScraps.configFile.Bind(Constants.GLOBAL, "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
+            scrapExclusions = CursedScraps.configFile.Bind(Constants.GLOBAL, "Exclusion list", "Key", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
+            isCurseInfoOn = CursedScraps.configFile.Bind(Constants.GLOBAL, "Curse info", true, "Does the information popup appear when a player is cursed?");
+            minParticleScale = CursedScraps.configFile.Bind(Constants.GLOBAL, "Min particle scale", 0.1f, "Min cursed particle scale.");
+            maxParticleScale = CursedScraps.configFile.Bind(Constants.GLOBAL, "Max particle scale", 1f, "Max cursed particle scale.");
+            rendererNames = CursedScraps.configFile.Bind(Constants.GLOBAL, "Renderer names", "Cube.001,Cube.002,DoorMesh,Trigger,EntranceTeleport", "List of renderer names for displaying the door's aura, to use in case custom map doors have different names.");
             // HIDE MECHANIC
-            isRedScanOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable red scan", true, "Is red scan on cursed scraps enabled?");
-            isParticleOn = CursedScraps.configFile.Bind("_Hiding mechanic_", "Enable particle", true, "Is cursed particle enabled?");
-            isHideLine = CursedScraps.configFile.Bind("_Hiding mechanic_", "Hide curse line", false, "Hide curse line in scan node");
-            isHideName = CursedScraps.configFile.Bind("_Hiding mechanic_", "Hide curse name", false, "Replace the curse name with '???'");
-            isHideValue = CursedScraps.configFile.Bind("_Hiding mechanic_", "Hide scrap value", false, "Replace the cursed scrap value with '???'");
+            isRedScanOn = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Enable red scan", true, "Is red scan on cursed scraps enabled?");
+            isParticleOn = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Enable particle", true, "Is cursed particle enabled?");
+            isHideLine = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Hide curse line", false, "Hide curse line in scan node");
+            isHideName = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Hide curse name", false, "Replace the curse name with '???'");
+            isHideValue = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Hide scrap value", false, "Replace the cursed scrap value with '???'");
             // PENALTY MECHANIC
-            penaltyMode = CursedScraps.configFile.Bind("_Penalty mechanic_", "Mode", Constants.PENALTY_HARD, "Mode for the penalty mechanic.\n" +
-                                                                                                             Constants.PENALTY_HARD + " - When the counter is reached, all players receive the curse of the next scrap scanned.\n" +
-                                                                                                             Constants.PENALTY_MEDIUM + " - When the counter is reached, only the player who scans the next cursed scrap receives the curse.\n" +
-                                                                                                             Constants.PENALTY_NONE + " - Never apply the penalty.");
-            penaltyCounter = CursedScraps.configFile.Bind("_Penalty mechanic_", "Counter", 15, "Number of cursed objects to be scanned before the next one affects the penalty.\nThe counter is reset after the penalty is applied.");
+            penaltyMode = CursedScraps.configFile.Bind(Constants.PENALTY_MECHANIC, "Mode", Constants.PENALTY_HARD, "Mode for the penalty mechanic.\n" +
+                                                                                                                   Constants.PENALTY_HARD + " - When the counter is reached, all players receive the curse of the next scrap scanned.\n" +
+                                                                                                                   Constants.PENALTY_MEDIUM + " - When the counter is reached, only the player who scans the next cursed scrap receives the curse.\n" +
+                                                                                                                   Constants.PENALTY_NONE + " - Never apply the penalty.");
+            penaltyCounter = CursedScraps.configFile.Bind(Constants.PENALTY_MECHANIC, "Counter", 10, "Number of cursed objects to be scanned before the next one affects the penalty.\nThe counter is reset after the penalty is applied.");
             // HOLY WATER
             isHolyWater = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Enable", true, "Is " + Constants.HOLY_WATER + " item enabled?\nConsumable that removes all active curses on the player.");
             holyWaterRarity = CursedScraps.configFile.Bind(Constants.HOLY_WATER, "Rarity", 20, Constants.HOLY_WATER + " spawn rarity.");
@@ -126,7 +134,10 @@ namespace CursedScraps.Managers
             // INHIBITION
             isInhibition = CursedScraps.configFile.Bind(Constants.INHIBITION, "Enable", true, "Is " + Constants.INHIBITION + " curse enabled?\nPrevents the player from jumping and crouching.");
             inhibitionMultiplier = CursedScraps.configFile.Bind(Constants.INHIBITION, "Multiplier", 1.75f, "Value multiplier for scraps with the " + Constants.INHIBITION + " curse.");
-            inhibitionWeight = CursedScraps.configFile.Bind(Constants.INHIBITION, "Weight", "default:1,Experimentation:0", "Spawn weight of a scrap with the " + Constants.INHIBITION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            inhibitionWeight = CursedScraps.configFile.Bind(Constants.INHIBITION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.INHIBITION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            isInhibitionTip = CursedScraps.configFile.Bind(Constants.INHIBITION, "Message", false, "Display a message when the blocked action is modified.");
+            inhibitionCooldown = CursedScraps.configFile.Bind(Constants.INHIBITION, "Cooldown", 20f, "Cooldown duration before a new action can be triggered.");
+            inhibitionActions = CursedScraps.configFile.Bind(Constants.INHIBITION, "Actions", "Jump,Crouch,Interact,Sprint,PingScan", "Actions that can be blocked by the curse " + Constants.INHIBITION + ".");
             // CONFUSION
             isConfusion = CursedScraps.configFile.Bind(Constants.CONFUSION, "Enable", true, "Is " + Constants.CONFUSION + " curse enabled?\nReverses movement controls and jump/crouch keys for the player.");
             confusionMultiplier = CursedScraps.configFile.Bind(Constants.CONFUSION, "Multiplier", 2f, "Value multiplier for scraps with the " + Constants.CONFUSION + " curse.");
@@ -174,10 +185,15 @@ namespace CursedScraps.Managers
             explorationWeight = CursedScraps.configFile.Bind(Constants.EXPLORATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.EXPLORATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             explorationDistance = CursedScraps.configFile.Bind(Constants.EXPLORATION, "Distance", 30f, "Distance between the player and the door at which the door's aura disappears.");
             // COMMUNICATION
-            isCommunication = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Enable", true, "Is " + Constants.COMMUNICATION + " curse enabled?\nThis curse affects two players in two stages. See README for more details.");
+            isCommunication = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Enable", true, "Is " + Constants.COMMUNICATION + " curse enabled?.");
             communicationMultiplier = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Multiplier", 2f, "Value multiplier for scraps with the " + Constants.COMMUNICATION + " curse.");
             communicationWeight = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.COMMUNICATION + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             communicationCooldown = CursedScraps.configFile.Bind(Constants.COMMUNICATION, "Cooldown duration", 10f, "Cooldown duration per player for sending indications to the cursed player (hot/cold particles).");
+            // FRAGILE
+            isFragile = CursedScraps.configFile.Bind(Constants.FRAGILE, "Enable", true, "Is " + Constants.FRAGILE + " curse enabled?.");
+            fragileMultiplier = CursedScraps.configFile.Bind(Constants.FRAGILE, "Multiplier", 2f, "Value multiplier for scraps with the " + Constants.FRAGILE + " curse.");
+            fragileWeight = CursedScraps.configFile.Bind(Constants.FRAGILE, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.FRAGILE + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            fragileExclusions = CursedScraps.configFile.Bind(Constants.FRAGILE, "Exclusion list", "Saw Tape", "List of items not affected by the " + Constants.FRAGILE + " curse.\nYou can add items by separating them with a comma.");
         }
 
         internal static List<CurseEffect> GetCurseEffectsFromConfig()
@@ -195,6 +211,7 @@ namespace CursedScraps.Managers
             if (isDiminutive.Value) curseEffects.Add(new CurseEffect(Constants.DIMINUTIVE, diminutiveMultiplier.Value, diminutiveWeight.Value));
             if (isExploration.Value) curseEffects.Add(new CurseEffect(Constants.EXPLORATION, explorationMultiplier.Value, explorationWeight.Value));
             if (isCommunication.Value) curseEffects.Add(new CurseEffect(Constants.COMMUNICATION, communicationMultiplier.Value, communicationWeight.Value));
+            if (isFragile.Value) curseEffects.Add(new CurseEffect(Constants.FRAGILE, fragileMultiplier.Value, fragileWeight.Value));
 
             return curseEffects;
         }

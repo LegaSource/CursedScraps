@@ -25,10 +25,22 @@ namespace CursedScraps.Managers
 
         public static void AddCurseEffect(ref PlayerCSBehaviour playerBehaviour, CurseEffect curseEffect, bool enable)
         {
-            bool isReturnOk = true;
             PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
             if (!string.IsNullOrEmpty(curseEffect.CurseName))
             {
+                if (enable)
+                {
+                    playerBehaviour.activeCurses.Add(curseEffect);
+                    if (ConfigManager.isCurseInfoOn.Value && localPlayer == playerBehaviour.playerProperties)
+                    {
+                        HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"You have just been affected by the curse {curseEffect.CurseName}");
+                    }
+                }
+                else
+                {
+                    playerBehaviour.activeCurses.Remove(curseEffect);
+                }
+
                 // Effets locaux
                 if (localPlayer == playerBehaviour.playerProperties)
                 {
@@ -46,6 +58,9 @@ namespace CursedScraps.Managers
                         case Constants.EXPLORATION:
                             Exploration.ApplyExploration(enable, ref playerBehaviour);
                             break;
+                        case Constants.INHIBITION:
+                            Inhibition.ApplyInhibition(enable, ref playerBehaviour);
+                            break;
                         default:
                             break;
                     }
@@ -61,19 +76,6 @@ namespace CursedScraps.Managers
                         break;
                     default:
                         break;
-                }
-                
-                if (enable && isReturnOk)
-                {
-                    playerBehaviour.activeCurses.Add(curseEffect);
-                    if (ConfigManager.isCurseInfoOn.Value && localPlayer == playerBehaviour.playerProperties)
-                    {
-                        HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"You have just been affected by the curse {curseEffect.CurseName}");
-                    }
-                }
-                else if (!enable && isReturnOk)
-                {
-                    playerBehaviour.activeCurses.Remove(curseEffect);
                 }
 
                 if (localPlayer != playerBehaviour.playerProperties && localPlayer.isPlayerDead)

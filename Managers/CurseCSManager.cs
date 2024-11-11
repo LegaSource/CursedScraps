@@ -45,7 +45,6 @@ namespace CursedScraps.Managers
             {
                 eligibleEffects.RemoveAll(c => c.CurseName.Equals(Constants.EXPLORATION));
             }
-            Debug.Log("GetEligibleCurseEffects dungeon name: " + RoundManager.Instance.dungeonGenerator.Generator.DungeonFlow.name);
             return eligibleEffects;
         }
 

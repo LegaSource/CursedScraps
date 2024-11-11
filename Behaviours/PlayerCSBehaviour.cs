@@ -10,6 +10,8 @@ namespace CursedScraps.Behaviours
         public PlayerControllerB playerProperties;
         public List<CurseEffect> activeCurses = new List<CurseEffect>();
         public List<CurseEffect> actionsBlockedBy = new List<CurseEffect>();
+        // INHIBITION
+        public string blockedAction;
         // DIMINUTIVE
         public Vector3 originalScale;
         public bool doubleJump = false;

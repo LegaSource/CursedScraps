@@ -11,7 +11,7 @@ namespace CursedScraps.Behaviours.Curses
             {
                 PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
                 if (playerBehaviour != null
-                    && playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.SHADOW)) != null)
+                    && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.SHADOW)))
                 {
                     ScanNodeProperties scanNode = enemy.gameObject.GetComponentInChildren<ScanNodeProperties>();
                     if (scanNode != null && HUDManager.Instance != null)
