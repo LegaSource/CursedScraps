@@ -41,7 +41,7 @@ namespace CursedScraps.Patches
             rectTransformDistance.anchorMin = new Vector2(0f, 1f);
             rectTransformDistance.anchorMax = new Vector2(0f, 1f);
             rectTransformDistance.pivot = new Vector2(0f, 1f);
-            rectTransformDistance.anchoredPosition = new Vector2(30f, -50f);
+            rectTransformDistance.anchoredPosition = new Vector2(ConfigManager.communicationDistancePosX.Value, ConfigManager.communicationDistancePosY.Value);
             rectTransformDistance.sizeDelta = new Vector2(300f, 300f);
             textMeshDistance.alignment = TextAlignmentOptions.TopLeft;
             textMeshDistance.font = __instance.controlTipLines[0].font;
@@ -59,7 +59,7 @@ namespace CursedScraps.Patches
             rectTransformCurses.anchorMin = new Vector2(1f, 0f);
             rectTransformCurses.anchorMax = new Vector2(1f, 0f);
             rectTransformCurses.pivot = new Vector2(1f, 0f);
-            rectTransformCurses.anchoredPosition = new Vector2(-30f, 50f);
+            rectTransformCurses.anchoredPosition = new Vector2(ConfigManager.deadCursesPosX.Value, ConfigManager.deadCursesPosY.Value);
             rectTransformCurses.sizeDelta = new Vector2(300f, 300f);
             textMeshCurses.alignment = TextAlignmentOptions.BottomRight;
             textMeshCurses.font = __instance.controlTipLines[0].font;

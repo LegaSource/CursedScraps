@@ -10,14 +10,16 @@ namespace CursedScraps.Values
         public int MinSpawn { get; private set; }
         public int MaxSpawn { get; private set; }
         public int Rarity { get; internal set; }
+        public int Value { get; internal set; }
 
-        public CustomItem(Type type, Item item, bool isSpawnable, int minSpawn, int maxSpawn, int rarity)
+        public CustomItem(Type type, Item item, bool isSpawnable, int minSpawn, int maxSpawn, int rarity, int value = 0)
         {
             Type = type;
             Item = item;
             IsSpawnable = isSpawnable;
             MaxSpawn = maxSpawn;
             Rarity = rarity;
+            Value = value;
         }
     }
 }

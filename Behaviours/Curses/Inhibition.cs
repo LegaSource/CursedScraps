@@ -22,6 +22,7 @@ namespace CursedScraps.Behaviours.Curses
                 if (inhibitionCoroutine != null)
                 {
                     player.StopCoroutine(inhibitionCoroutine);
+                    inhibitionCoroutine = null;
                 }
                 if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
                 {

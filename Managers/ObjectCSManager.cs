@@ -118,7 +118,7 @@ namespace CursedScraps.Managers
             if (grabbableObject != null)
             {
                 ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
+                if (objectBehaviour != null && objectBehaviour.curseEffects.Any())
                 {
                     CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), false);
                     // Affectation des malédictions au joueur

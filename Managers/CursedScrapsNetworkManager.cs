@@ -6,6 +6,7 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace CursedScraps.Managers
 {
@@ -31,46 +32,47 @@ namespace CursedScraps.Managers
 
         public void SetScrapCurseEffect(ref GrabbableObject grabbableObject, string curseName, bool applyValue)
         {
-            CurseEffect curseEffect = CursedScraps.curseEffects.Where(c => c.CurseName.Equals(curseName)).FirstOrDefault();
-            ScanNodeProperties scanNode = grabbableObject?.gameObject.GetComponentInChildren<ScanNodeProperties>();
-            if (scanNode != null && curseEffect != null)
+            CurseEffect curseEffect = CursedScraps.curseEffects.FirstOrDefault(c => c.CurseName.Equals(curseName));
+            if (curseEffect == null || grabbableObject == null) return;
+
+            ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>() ?? grabbableObject.gameObject.AddComponent<ObjectCSBehaviour>();
+            objectBehaviour.objectProperties = grabbableObject;
+            objectBehaviour.curseEffects.Add(curseEffect);
+            if (grabbableObject.itemProperties.isScrap && applyValue)
             {
-                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>() ?? grabbableObject.gameObject.AddComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
+                grabbableObject.scrapValue = (int)(grabbableObject.scrapValue * curseEffect.Multiplier);
+            }
+
+            if (ConfigManager.isParticleOn.Value)
+            {
+                float maxValue = Mathf.Max(grabbableObject.transform.localScale.x, Mathf.Max(grabbableObject.transform.localScale.y, grabbableObject.transform.localScale.z));
+                if (maxValue < ConfigManager.minParticleScale.Value) maxValue = ConfigManager.minParticleScale.Value;
+                else if (maxValue > ConfigManager.maxParticleScale.Value) maxValue = ConfigManager.maxParticleScale.Value;
+
+                if (objectBehaviour.particleEffect == null)
                 {
-                    objectBehaviour.objectProperties = grabbableObject;
-                    objectBehaviour.curseEffects.Add(curseEffect);
+                    GameObject curseParticleEffect = Instantiate(CursedScraps.curseParticle, grabbableObject.transform.position, Quaternion.identity);
+                    curseParticleEffect.transform.SetParent(grabbableObject.transform);
+                    objectBehaviour.particleEffect = curseParticleEffect;
 
-                    if (applyValue)
+                    ParticleSystem particleSystem = curseParticleEffect.GetComponent<ParticleSystem>();
+                    if (particleSystem != null)
                     {
-                        grabbableObject.scrapValue = (int)(grabbableObject.scrapValue * curseEffect.Multiplier);
-                    }
-                    scanNode.scrapValue = grabbableObject.scrapValue;
-                    scanNode.subText = GetNewSubText(ref objectBehaviour, grabbableObject.scrapValue.ToString());
-                    if (ConfigManager.isRedScanOn.Value)
-                    {
-                        scanNode.nodeType = 1;
-                    }
-
-                    if (ConfigManager.isParticleOn.Value)
-                    {
-                        float maxValue = Mathf.Max(grabbableObject.transform.localScale.x, Mathf.Max(grabbableObject.transform.localScale.y, grabbableObject.transform.localScale.z));
-                        if (maxValue < ConfigManager.minParticleScale.Value) maxValue = ConfigManager.minParticleScale.Value;
-                        else if (maxValue > ConfigManager.maxParticleScale.Value) maxValue = ConfigManager.maxParticleScale.Value;
-
-                        GameObject curseParticleEffect = Instantiate(CursedScraps.curseParticle, grabbableObject.transform.position, Quaternion.identity);
-                        curseParticleEffect.transform.SetParent(grabbableObject.transform);
-                        objectBehaviour.particleEffect = curseParticleEffect;
-
-                        ParticleSystem particleSystem = curseParticleEffect.GetComponent<ParticleSystem>();
-                        if (particleSystem != null)
-                        {
-                            ParticleSystem.MainModule mainModule = particleSystem.main;
-                            mainModule.startSize = maxValue;
-                            mainModule.startSpeed = maxValue / 3f;
-                        }
+                        ParticleSystem.MainModule mainModule = particleSystem.main;
+                        mainModule.startSize = maxValue;
+                        mainModule.startSpeed = maxValue / 3f;
                     }
                 }
+
+                if (grabbableObject.isHeld) EnableParticle(ref objectBehaviour, false);
+            }
+
+            ScanNodeProperties scanNode = grabbableObject.gameObject.GetComponentInChildren<ScanNodeProperties>();
+            if (scanNode != null)
+            {
+                if (grabbableObject.itemProperties.isScrap) scanNode.scrapValue = grabbableObject.scrapValue;
+                scanNode.subText = GetNewSubText(ref objectBehaviour, grabbableObject.scrapValue.ToString());
+                if (ConfigManager.isRedScanOn.Value) scanNode.nodeType = 1;
             }
         }
 
@@ -80,20 +82,21 @@ namespace CursedScraps.Managers
             {
                 scrapValue = "???";
             }
+
             string curseText = "";
+            bool isScrap = objectCSBehaviour.objectProperties.itemProperties.isScrap;
+            bool firstCurse = true;
+
             if (!ConfigManager.isHideLine.Value)
             {
                 foreach (CurseEffect curseEffect in objectCSBehaviour.curseEffects)
                 {
-                    string curseName = curseEffect.CurseName;
-                    if (ConfigManager.isHideName.Value)
-                    {
-                        curseName = "???";
-                    }
-                    curseText += $"\nCurse: {curseName}";
+                    string curseName = ConfigManager.isHideName.Value ? "???" : curseEffect.CurseName;
+                    curseText += (firstCurse && !isScrap ? "" : "\n") + $"Curse: {curseName}";
+                    firstCurse = false;
                 }
             }
-            return $"Value: ${scrapValue}{curseText}";
+            return isScrap ? $"Value: ${scrapValue}{curseText}" : curseText;
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -105,16 +108,19 @@ namespace CursedScraps.Managers
             if (obj.TryGet(out var networkObject))
             {
                 ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                ScanNodeProperties scanNode = objectBehaviour?.objectProperties.gameObject.GetComponentInChildren<ScanNodeProperties>();
-                if (scanNode != null)
+                if (objectBehaviour != null)
                 {
-                    scanNode.subText = $"Value: ${scanNode.scrapValue}";
-                    scanNode.nodeType = 2;
                     objectBehaviour.curseEffects.Clear();
-
                     if (objectBehaviour.particleEffect != null)
                     {
                         Destroy(objectBehaviour.particleEffect);
+                    }
+
+                    ScanNodeProperties scanNode = objectBehaviour.objectProperties.gameObject.GetComponentInChildren<ScanNodeProperties>();
+                    if (scanNode != null)
+                    {
+                        scanNode.subText = $"Value: ${scanNode.scrapValue}";
+                        scanNode.nodeType = (objectBehaviour.objectProperties.itemProperties.isScrap ? 2 : 0);
                     }
                 }
             }
@@ -203,10 +209,15 @@ namespace CursedScraps.Managers
             if (obj.TryGet(out var networkObject))
             {
                 ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                if (objectBehaviour != null && objectBehaviour.particleEffect != null)
-                {
-                    objectBehaviour.particleEffect.gameObject.SetActive(enable);
-                }
+                EnableParticle(ref objectBehaviour, enable);
+            }
+        }
+
+        public void EnableParticle(ref ObjectCSBehaviour objectBehaviour, bool enable)
+        {
+            if (objectBehaviour != null && objectBehaviour.particleEffect != null)
+            {
+                objectBehaviour.particleEffect.gameObject.SetActive(enable);
             }
         }
 

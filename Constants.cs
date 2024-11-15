@@ -4,6 +4,7 @@
     {
         // Configs
         public const string GLOBAL = "_Global_";
+        public const string HUD = "_HUD_";
         public const string HIDING_MECHANIC = "_Hiding mechanic_";
         public const string PENALTY_MECHANIC = "_Penalty mechanic_";
         // Penalty mechanic

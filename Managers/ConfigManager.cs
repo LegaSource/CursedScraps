@@ -10,10 +10,15 @@ namespace CursedScraps.Managers
         public static ConfigEntry<string> globalChance;
         public static ConfigEntry<bool> globalPrevent;
         public static ConfigEntry<string> scrapExclusions;
-        public static ConfigEntry<bool> isCurseInfoOn;
         public static ConfigEntry<float> minParticleScale;
         public static ConfigEntry<float> maxParticleScale;
         public static ConfigEntry<string> rendererNames;
+        // HUD
+        public static ConfigEntry<bool> isCurseInfoOn;
+        public static ConfigEntry<float> deadCursesPosX;
+        public static ConfigEntry<float> deadCursesPosY;
+        public static ConfigEntry<float> communicationDistancePosX;
+        public static ConfigEntry<float> communicationDistancePosY;
         // HIDE MECHANIC
         public static ConfigEntry<bool> isRedScanOn;
         public static ConfigEntry<bool> isParticleOn;
@@ -104,10 +109,15 @@ namespace CursedScraps.Managers
             globalChance = CursedScraps.configFile.Bind(Constants.GLOBAL, "Chance", "default:15", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
             globalPrevent = CursedScraps.configFile.Bind(Constants.GLOBAL, "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
             scrapExclusions = CursedScraps.configFile.Bind(Constants.GLOBAL, "Exclusion list", "Key", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
-            isCurseInfoOn = CursedScraps.configFile.Bind(Constants.GLOBAL, "Curse info", true, "Does the information popup appear when a player is cursed?");
             minParticleScale = CursedScraps.configFile.Bind(Constants.GLOBAL, "Min particle scale", 0.1f, "Min cursed particle scale.");
             maxParticleScale = CursedScraps.configFile.Bind(Constants.GLOBAL, "Max particle scale", 1f, "Max cursed particle scale.");
             rendererNames = CursedScraps.configFile.Bind(Constants.GLOBAL, "Renderer names", "Cube.001,Cube.002,DoorMesh,Trigger,EntranceTeleport", "List of renderer names for displaying the door's aura, to use in case custom map doors have different names.");
+            // HUD
+            isCurseInfoOn = CursedScraps.configFile.Bind(Constants.HUD, "Curse info", true, "Does the information popup appear when a player is cursed?");
+            deadCursesPosX = CursedScraps.configFile.Bind(Constants.HUD, "Dead curses pos X", -30f, "X position of player curses text on the interface as a spectator.");
+            deadCursesPosY = CursedScraps.configFile.Bind(Constants.HUD, "Dead curses pos Y", 50f, "Y position of player curses text on the interface as a spectator.");
+            communicationDistancePosX = CursedScraps.configFile.Bind(Constants.HUD, "Communication distance pos X", 30f, "X position of player's distance text, from the " + Constants.COMMUNICATION + " curse, on the interface as a spectator.");
+            communicationDistancePosY = CursedScraps.configFile.Bind(Constants.HUD, "Communication distance pos Y", -50f, "Y position of player's distance text, from the " + Constants.COMMUNICATION + " curse, on the interface as a spectator.");
             // HIDE MECHANIC
             isRedScanOn = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Enable red scan", true, "Is red scan on cursed scraps enabled?");
             isParticleOn = CursedScraps.configFile.Bind(Constants.HIDING_MECHANIC, "Enable particle", true, "Is cursed particle enabled?");
