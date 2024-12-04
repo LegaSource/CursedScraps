@@ -11,9 +11,7 @@ namespace CursedScraps.Patches
         {
             ObjectCSBehaviour objectBehaviour = __instance.GetComponent<ObjectCSBehaviour>();
             if (objectBehaviour != null && objectBehaviour.particleEffect != null)
-            {
                 objectBehaviour.particleEffect.transform.localScale = __instance.transform.localScale;
-            }
         }
 
         [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.SetScrapValue))]
@@ -22,9 +20,7 @@ namespace CursedScraps.Patches
         {
             ObjectCSBehaviour objectBehaviour = __instance.GetComponent<ObjectCSBehaviour>();
             if (objectBehaviour != null && objectBehaviour.curseEffects.Count > 0)
-            {
                 return false;
-            }
             return true;
         }
     }

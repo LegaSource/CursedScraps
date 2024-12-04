@@ -20,6 +20,30 @@ namespace CursedScraps.Behaviours.Curses
             }
         }
 
+        public static bool IsExploration(PlayerCSBehaviour playerBehaviour)
+        {
+            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.EXPLORATION)))
+                return true;
+            return false;
+        }
+
+        public static bool EntranceInteraction(PlayerCSBehaviour playerBehaviour, EntranceTeleport entranceTeleport)
+        {
+            if (IsExploration(playerBehaviour))
+            {
+                if (entranceTeleport != playerBehaviour.targetDoor)
+                {
+                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from using this doorway.");
+                    return false;
+                }
+                else
+                {
+                    ChangeRandomEntranceId(playerBehaviour.playerProperties.isInsideFactory, ref playerBehaviour);
+                }
+            }
+            return true;
+        }
+
         public static void ChangeRandomEntranceId(bool isEntrance, ref PlayerCSBehaviour playerBehaviour)
         {
             List<EntranceTeleport> entrances = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>()

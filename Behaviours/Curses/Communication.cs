@@ -31,9 +31,7 @@ namespace CursedScraps.Behaviours.Curses
                 }
 
                 if (localPlayer != playerBehaviour.playerProperties && localPlayer.isPlayerDead)
-                {
-                    ApplyCommunicationForDeadPlayer(ref playerBehaviour);
-                }
+                    ApplyCommunicationForDeadPlayer(playerBehaviour);
             }
             else
             {
@@ -42,23 +40,29 @@ namespace CursedScraps.Behaviours.Curses
             }
         }
 
-        public static void ApplyCommunicationForDeadPlayer(ref PlayerCSBehaviour playerBehaviour)
+        public static bool IsCommunication(PlayerCSBehaviour playerBehaviour)
         {
-            if (trackedItemCoroutine != null)
-            {
-                HUDManager.Instance.StopCoroutine(trackedItemCoroutine);
-            }
-            trackedItemCoroutine = HUDManager.Instance.StartCoroutine(HUDCSManager.StartTrackedItemCoroutine(playerBehaviour));
+            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.COMMUNICATION)))
+                return true;
+            return false;
         }
 
-        public static bool CanEscape(ref PlayerCSBehaviour playerBehaviour, string message)
+        public static void ApplyCommunicationForDeadPlayer(PlayerCSBehaviour playerBehaviour)
         {
-            if (playerBehaviour.activeCurses.Any(p => p.CurseName.Equals(Constants.COMMUNICATION)) && !playerBehaviour.canEscape)
+            if (IsCommunication(playerBehaviour))
+            {
+                if (trackedItemCoroutine != null)
+                    HUDManager.Instance.StopCoroutine(trackedItemCoroutine);
+                trackedItemCoroutine = HUDManager.Instance.StartCoroutine(HUDCSManager.StartTrackedItemCoroutine(playerBehaviour));
+            }
+        }
+
+        public static bool CanEscape(PlayerCSBehaviour playerBehaviour, string message)
+        {
+            if (IsCommunication(playerBehaviour) && !playerBehaviour.canEscape)
             {
                 if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
-                {
                     HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, message);
-                }
                 return false;
             }
             return true;

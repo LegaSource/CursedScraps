@@ -8,8 +8,8 @@ namespace CursedScraps.Managers
 {
     public class CustomPassManager : MonoBehaviour
     {
-        private static WallhackCustomPass wallhackPass;
-        private static CustomPassVolume customPassVolume;
+        public static WallhackCustomPass wallhackPass;
+        public static CustomPassVolume customPassVolume;
 
         public static CustomPassVolume CustomPassVolume
         {
@@ -82,9 +82,6 @@ namespace CursedScraps.Managers
             wallhackPass.SetTargetRenderers(doorRenderers.ToArray(), CursedScraps.wallhackShader);
         }
 
-        public static void RemoveAuraFromDoor()
-        {
-            wallhackPass?.ClearTargetRenderers();
-        }
+        public static void RemoveAuraFromDoor() => wallhackPass?.ClearTargetRenderers();
     }
 }

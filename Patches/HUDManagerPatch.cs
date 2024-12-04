@@ -7,7 +7,6 @@ using System.Linq;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace CursedScraps.Patches
 {
@@ -19,7 +18,7 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.Start))]
         [HarmonyPostfix]
-        private static void StartHUDManager(HUDManager __instance)
+        private static void StartHUDManager()
         {
             /*GameObject chrono = Object.Instantiate(__instance.weightCounterAnimator.gameObject, __instance.weightCounterAnimator.transform.parent);
             chrono.transform.localPosition += new Vector3(-85f, 185f, 0f);
@@ -29,42 +28,24 @@ namespace CursedScraps.Patches
             chronoText.text = "";
             chronoText.alignment = TextAlignmentOptions.BottomLeft;
             chronoText.name = "Chrono";*/
+            
+            distanceText = HUDCSManager.CreateUIElement(
+                name: "DistanceUI",
+                anchorMin: new Vector2(0f, 1f),
+                anchorMax: new Vector2(0f, 1f),
+                pivot: new Vector2(0f, 1f),
+                anchoredPosition: new Vector2(ConfigManager.communicationDistancePosX.Value, ConfigManager.communicationDistancePosY.Value),
+                alignment: TextAlignmentOptions.TopLeft
+            );
 
-
-            GameObject distance = new GameObject("DistanceUI");
-            distance.transform.localPosition = new Vector3(0f, 0f, 0f);
-            distance.AddComponent<RectTransform>();
-
-            TextMeshProUGUI textMeshDistance = distance.AddComponent<TextMeshProUGUI>();
-            RectTransform rectTransformDistance = textMeshDistance.rectTransform;
-            rectTransformDistance.SetParent(GameObject.Find("Systems/UI/Canvas/Panel/GameObject/PlayerScreen").transform, worldPositionStays: false);
-            rectTransformDistance.anchorMin = new Vector2(0f, 1f);
-            rectTransformDistance.anchorMax = new Vector2(0f, 1f);
-            rectTransformDistance.pivot = new Vector2(0f, 1f);
-            rectTransformDistance.anchoredPosition = new Vector2(ConfigManager.communicationDistancePosX.Value, ConfigManager.communicationDistancePosY.Value);
-            rectTransformDistance.sizeDelta = new Vector2(300f, 300f);
-            textMeshDistance.alignment = TextAlignmentOptions.TopLeft;
-            textMeshDistance.font = __instance.controlTipLines[0].font;
-            textMeshDistance.fontSize = 14f;
-            distanceText = textMeshDistance;
-
-
-            GameObject curses = new GameObject("CursesUI");
-            curses.transform.localPosition = new Vector3(0f, 0f, 0f);
-            curses.AddComponent<RectTransform>();
-
-            TextMeshProUGUI textMeshCurses = curses.AddComponent<TextMeshProUGUI>();
-            RectTransform rectTransformCurses = textMeshCurses.rectTransform;
-            rectTransformCurses.SetParent(GameObject.Find("Systems/UI/Canvas/Panel/GameObject/PlayerScreen").transform, worldPositionStays: false);
-            rectTransformCurses.anchorMin = new Vector2(1f, 0f);
-            rectTransformCurses.anchorMax = new Vector2(1f, 0f);
-            rectTransformCurses.pivot = new Vector2(1f, 0f);
-            rectTransformCurses.anchoredPosition = new Vector2(ConfigManager.deadCursesPosX.Value, ConfigManager.deadCursesPosY.Value);
-            rectTransformCurses.sizeDelta = new Vector2(300f, 300f);
-            textMeshCurses.alignment = TextAlignmentOptions.BottomRight;
-            textMeshCurses.font = __instance.controlTipLines[0].font;
-            textMeshCurses.fontSize = 14f;
-            cursesText = textMeshCurses;
+            cursesText = HUDCSManager.CreateUIElement(
+                name: "CursesUI",
+                anchorMin: new Vector2(1f, 0f),
+                anchorMax: new Vector2(1f, 0f),
+                pivot: new Vector2(1f, 0f),
+                anchoredPosition: new Vector2(ConfigManager.deadCursesPosX.Value, ConfigManager.deadCursesPosY.Value),
+                alignment: TextAlignmentOptions.BottomRight
+            );
         }
 
         [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.AssignNodeToUIElement))]
@@ -74,12 +55,7 @@ namespace CursedScraps.Patches
             if (__instance.scanNodes.ContainsValue(node))
             {
                 PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
-                if (playerBehaviour != null
-                    && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.PARALYSIS))
-                    && node.nodeType == 1)
-                {
-                    Paralyze.ApplyParalyze(ref playerBehaviour);
-                }
+                Paralysis.ScanPerformed(playerBehaviour, node);
 
                 // Penalty mode
                 if (!string.IsNullOrEmpty(ConfigManager.penaltyMode.Value) && !ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_NONE))
@@ -88,10 +64,10 @@ namespace CursedScraps.Patches
                     if (objectBehaviour != null && objectBehaviour.curseEffects.Count() > 0)
                     {
                         SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+
                         if (!sorBehaviour.scannedObjects.Contains(objectBehaviour.objectProperties))
-                        {
                             CursedScrapsNetworkManager.Instance.IncrementPenaltyCounterServerRpc(objectBehaviour.objectProperties.GetComponent<NetworkObject>());
-                        }
+
                         if (sorBehaviour.counter >= ConfigManager.penaltyCounter.Value)
                         {
                             foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
@@ -99,9 +75,7 @@ namespace CursedScraps.Patches
                                 if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_HARD))
                                 {
                                     foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts.Where(p => p.isPlayerControlled && !p.isPlayerDead))
-                                    {
                                         CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)player.playerClientId, curseEffect.CurseName, true);
-                                    }
                                 }
                                 else if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_MEDIUM))
                                 {
@@ -116,42 +90,23 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.SetScreenFilters))]
         [HarmonyPostfix]
-        private static void UpdateScreenFilters(ref Volume ___drunknessFilter)
-        {
-            PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.BLURRY)))
-            {
-                ___drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
-            }
-        }
+        private static void UpdateScreenFilters() => Blurry.UpdateScreenFilters(GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>());
 
         [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.HoldInteractionFill))]
         [HarmonyPostfix]
         private static void EntranceInteraction(ref bool __result)
         {
-            if (!__result)
-            {
-                return;
-            }
+            if (!__result) return;
+
             PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
             EntranceTeleport entranceTeleport = playerBehaviour.playerProperties.hoveringOverTrigger?.gameObject.GetComponent<EntranceTeleport>();
             if (entranceTeleport != null)
             {
-                // EXPLORATION
-                if (playerBehaviour.activeCurses.Any(p => p.CurseName.Equals(Constants.EXPLORATION)))
+                if (!Exploration.EntranceInteraction(playerBehaviour, entranceTeleport)
+                    || !Communication.CanEscape(playerBehaviour, "A curse prevents you from using this doorway."))
                 {
-                    if (entranceTeleport != playerBehaviour.targetDoor)
-                    {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from using this doorway.");
-                        __result = false;
-                    }
-                    else
-                    {
-                        Exploration.ChangeRandomEntranceId(playerBehaviour.playerProperties.isInsideFactory, ref playerBehaviour);
-                    }
+                    __result = false;
                 }
-                // COMMUNICATION
-                __result = Communication.CanEscape(ref playerBehaviour, "A curse prevents you from using this doorway.");
             }
         }
     }

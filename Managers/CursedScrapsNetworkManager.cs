@@ -6,7 +6,6 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace CursedScraps.Managers
 {
@@ -39,9 +38,7 @@ namespace CursedScraps.Managers
             objectBehaviour.objectProperties = grabbableObject;
             objectBehaviour.curseEffects.Add(curseEffect);
             if (grabbableObject.itemProperties.isScrap && applyValue)
-            {
                 grabbableObject.scrapValue = (int)(grabbableObject.scrapValue * curseEffect.Multiplier);
-            }
 
             if (ConfigManager.isParticleOn.Value)
             {
@@ -78,10 +75,7 @@ namespace CursedScraps.Managers
 
         public string GetNewSubText(ref ObjectCSBehaviour objectCSBehaviour, string scrapValue)
         {
-            if (ConfigManager.isHideValue.Value)
-            {
-                scrapValue = "???";
-            }
+            if (ConfigManager.isHideValue.Value) scrapValue = "???";
 
             string curseText = "";
             bool isScrap = objectCSBehaviour.objectProperties.itemProperties.isScrap;
@@ -111,10 +105,9 @@ namespace CursedScraps.Managers
                 if (objectBehaviour != null)
                 {
                     objectBehaviour.curseEffects.Clear();
+
                     if (objectBehaviour.particleEffect != null)
-                    {
                         Destroy(objectBehaviour.particleEffect);
-                    }
 
                     ScanNodeProperties scanNode = objectBehaviour.objectProperties.gameObject.GetComponentInChildren<ScanNodeProperties>();
                     if (scanNode != null)
@@ -151,9 +144,7 @@ namespace CursedScraps.Managers
             if (playerBehaviour != null)
             {
                 foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
-                {
                     PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, false);
-                }
             }
         }
 
@@ -164,9 +155,7 @@ namespace CursedScraps.Managers
         private void DestroyObjectClientRpc(NetworkObjectReference obj)
         {
             if (obj.TryGet(out var networkObject))
-            {
                 DestroyObject(networkObject.gameObject.GetComponentInChildren<GrabbableObject>());
-            }
         }
 
         public void DestroyObject(GrabbableObject grabbableObject)
@@ -187,15 +176,11 @@ namespace CursedScraps.Managers
                 {
                     SkinnedMeshRenderer[] skinnedMeshRenderers = beltBagItem.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
                     foreach (SkinnedMeshRenderer skinnedMeshRenderer in skinnedMeshRenderers.ToList())
-                    {
                         Destroy(skinnedMeshRenderer);
-                    }
                 }
                 ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
                 if (objectBehaviour != null && objectBehaviour.particleEffect != null)
-                {
                     Destroy(objectBehaviour.particleEffect);
-                }
                 grabbableObject.DestroyObjectInHand(grabbableObject.playerHeldBy);
             }
         }
@@ -216,9 +201,7 @@ namespace CursedScraps.Managers
         public void EnableParticle(ref ObjectCSBehaviour objectBehaviour, bool enable)
         {
             if (objectBehaviour != null && objectBehaviour.particleEffect != null)
-            {
                 objectBehaviour.particleEffect.gameObject.SetActive(enable);
-            }
         }
 
         // DIMINUTIVE
@@ -230,9 +213,7 @@ namespace CursedScraps.Managers
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
             if (player == GameNetworkManager.Instance.localPlayerController)
-            {
                 player.thisController.Move(pushVector);
-            }
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -243,9 +224,7 @@ namespace CursedScraps.Managers
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
             if (player == GameNetworkManager.Instance.localPlayerController)
-            {
                 player.KillPlayer(velocity, spawnBody, (CauseOfDeath)causeOfDeath);
-            }
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -261,9 +240,7 @@ namespace CursedScraps.Managers
                 playerBehaviour.trackedItem = grabbableObject;
 
                 if (grabbableObject is OldScroll oldScroll)
-                {
                     oldScroll.assignedPlayer = playerBehaviour.playerProperties;
-                }
             }
         }
 
@@ -274,16 +251,13 @@ namespace CursedScraps.Managers
         public void SpawnParticleClientRpc(int playerId, bool isHot)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-
             GameObject spawnObject;
+
             if (isHot)
-            {
                 spawnObject = Instantiate(CursedScraps.hotParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
-            }
             else
-            {
                 spawnObject = Instantiate(CursedScraps.coldParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
-            }
+
             spawnObject.transform.SetParent(player.transform);
             spawnObject.transform.localScale = player.transform.localScale;
 
@@ -320,9 +294,7 @@ namespace CursedScraps.Managers
                 GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
                 BeltBagItem beltBagItem = bagNetworkObject.gameObject.GetComponentInChildren<GrabbableObject>() as BeltBagItem;
                 if (grabbableObject != null && beltBagItem != null)
-                {
                     beltBagItem.objectsInBag.Remove(grabbableObject);
-                }
             }
         }
     }

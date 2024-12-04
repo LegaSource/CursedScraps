@@ -7,9 +7,6 @@ namespace CursedScraps.Patches
     {
         [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.SetClientCalculatingAI))]
         [HarmonyPostfix]
-        private static void CalculateIA(ref EnemyAI __instance)
-        {
-            Shadow.ApplyShadow(ref __instance);
-        }
+        private static void CalculateIA(ref EnemyAI __instance) => Shadow.ApplyShadow(ref __instance);
     }
 }

@@ -20,9 +20,7 @@ namespace CursedScraps.Patches
                 if (objectBehaviour != null)
                 {
                     foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
-                    {
                         CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(__instance.GetComponent<NetworkObject>(), curseEffect.CurseName);
-                    }
                 }
             }
         }

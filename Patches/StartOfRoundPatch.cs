@@ -26,17 +26,12 @@ namespace CursedScraps.Patches
             }
 
             if (__instance.GetComponent<SORCSBehaviour>() == null)
-            {
                 __instance.gameObject.AddComponent<SORCSBehaviour>();
-            }
         }
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.OnDisable))]
         [HarmonyPostfix]
-        public static void OnDisable()
-        {
-            CursedScrapsNetworkManager.Instance = null;
-        }
+        public static void OnDisable() => CursedScrapsNetworkManager.Instance = null;
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.OnPlayerConnectedClientRpc))]
         [HarmonyPostfix]
@@ -54,9 +49,6 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ReviveDeadPlayers))]
         [HarmonyPostfix]
-        private static void ReviveDeadPlayers()
-        {
-            CommunicationInputs.Instance.DisableInputs();
-        }
+        private static void ReviveDeadPlayers() => CommunicationInputs.Instance.DisableInputs();
     }
 }

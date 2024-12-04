@@ -16,7 +16,7 @@ namespace CursedScraps.Patches
                 if (__instance.currentBeltBag.objectsInBag.Count > slot
                     && grabbableObject != null
                     && !__instance.currentBeltBag.tryingAddToBag
-                    && !ObjectCSManager.PreDropObject(ref __instance.currentBeltBag.playerHeldBy, ref grabbableObject))
+                    && !ObjectCSManager.PreDropObject(__instance.currentBeltBag.playerHeldBy, grabbableObject))
                 {
                     if (grabbableObject.deactivated)
                     {
@@ -28,7 +28,7 @@ namespace CursedScraps.Patches
                     HUDManager.Instance.SetMouseCursorSprite(HUDManager.Instance.handOpenCursorTex);
                     return false;
                 }
-                ObjectCSManager.PostDropObject(ref __instance.currentBeltBag.playerHeldBy);
+                ObjectCSManager.PostDropObject(__instance.currentBeltBag.playerHeldBy);
             }
             return true;
         }

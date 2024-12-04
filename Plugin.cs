@@ -24,7 +24,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.1.0";
+        private const string modVersion = "2.1.1";
 
         private readonly Harmony harmony = new Harmony(modGUID);
         private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -123,9 +123,7 @@ namespace CursedScraps
         }
 
         public static void LoadShaders()
-        {
-            wallhackShader = bundle.LoadAsset<Material>("Assets/Shaders/WallhackMaterial.mat");
-        }
+            => wallhackShader = bundle.LoadAsset<Material>("Assets/Shaders/WallhackMaterial.mat");
 
         public static void PatchOtherMods(Harmony harmony)
         {
@@ -135,6 +133,14 @@ namespace CursedScraps
                 harmony.Patch (
                     AccessTools.Method(capsuleHoiPoiClass, "SetComponentClientRpc"),
                     prefix: new HarmonyMethod(typeof(AddonFusionPatch).GetMethod("PreGrabObject"))
+                );
+            }
+            Type beltBagPatchClass = Type.GetType("BagConfig.Patches.BeltBagPatch, BagConfig");
+            if (beltBagPatchClass != null)
+            {
+                harmony.Patch(
+                    AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
+                    prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
                 );
             }
         }

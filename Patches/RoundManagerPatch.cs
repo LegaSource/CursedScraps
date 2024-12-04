@@ -25,10 +25,7 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnScrapInLevel))]
         [HarmonyPostfix]
-        private static void SpawnScraps(ref RoundManager __instance)
-        {
-            ObjectCSManager.AddNewItems(ref __instance);
-        }
+        private static void SpawnScraps(ref RoundManager __instance) => ObjectCSManager.AddNewItems(ref __instance);
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SyncScrapValuesClientRpc))]
         [HarmonyPostfix]
@@ -54,9 +51,7 @@ namespace CursedScraps.Patches
                         {
                             NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
                             if (networkObject != null && networkObject.IsSpawned)
-                            {
                                 CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(networkObject, curseEffect.CurseName);
-                            }
                         }
                     }
                 }
@@ -70,9 +65,7 @@ namespace CursedScraps.Patches
             // Destruction des objets qui possèdent toujours une malédiction en étant dans le vaisseau
             ObjectCSBehaviour objectBehaviour;
             foreach (GrabbableObject grabbableObject in Object.FindObjectsOfType<GrabbableObject>().Where(g => g.isInElevator && (objectBehaviour = g.GetComponent<ObjectCSBehaviour>()) != null && objectBehaviour.curseEffects.Count > 0))
-            {
                 CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(grabbableObject.GetComponent<NetworkObject>());
-            }
         }
     }
 }

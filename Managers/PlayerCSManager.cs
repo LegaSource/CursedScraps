@@ -13,13 +13,9 @@ namespace CursedScraps.Managers
             if (playerBehaviour != null)
             {
                 if (enable && !playerBehaviour.activeCurses.Contains(curseEffect))
-                {
                     AddCurseEffect(ref playerBehaviour, curseEffect, enable);
-                }
                 else if (!enable && playerBehaviour.activeCurses.Contains(curseEffect))
-                {
                     AddCurseEffect(ref playerBehaviour, curseEffect, enable);
-                }
             }
         }
 
@@ -32,9 +28,7 @@ namespace CursedScraps.Managers
                 {
                     playerBehaviour.activeCurses.Add(curseEffect);
                     if (ConfigManager.isCurseInfoOn.Value && localPlayer == playerBehaviour.playerProperties)
-                    {
                         HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"You have just been affected by the curse {curseEffect.CurseName}");
-                    }
                 }
                 else
                 {
@@ -113,16 +107,9 @@ namespace CursedScraps.Managers
                 string[] actionNames = { "Move", "Jump", "Crouch", "Interact", "ItemSecondaryUse", "ItemTertiaryUse", "ActivateItem", "SwitchItem", "InspectItem", "Emote1", "Emote2" };
 
                 if (enable)
-                {
                     playerCSBehaviour.actionsBlockedBy.Remove(curseEffect);
-                }
-                else
-                {
-                    if (!playerCSBehaviour.actionsBlockedBy.Contains(curseEffect))
-                    {
-                        playerCSBehaviour.actionsBlockedBy.Add(curseEffect);
-                    }
-                }
+                else if (!playerCSBehaviour.actionsBlockedBy.Contains(curseEffect))
+                    playerCSBehaviour.actionsBlockedBy.Add(curseEffect);
 
                 foreach (string actionName in actionNames)
                 {

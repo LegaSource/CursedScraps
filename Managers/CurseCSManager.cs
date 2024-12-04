@@ -8,9 +8,7 @@ namespace CursedScraps.Managers
         public static bool IsCursed(string planetName)
         {
             if (new System.Random().Next(1, 100) <= GetValueFromPair(ConfigManager.globalChance.Value, planetName))
-            {
                 return true;
-            }
             return false;
         }
 
@@ -19,13 +17,9 @@ namespace CursedScraps.Managers
             List<CurseEffect> eligibleEffects = GetEligibleCurseEffects(planetName);
             // Sélectionner un effet aléatoire parmi les effets éligibles
             if (eligibleEffects.Count > 0)
-            {
                 return eligibleEffects[new System.Random().Next(eligibleEffects.Count)];
-            }
             else
-            {
                 return null;
-            }
         }
 
         public static List<CurseEffect> GetEligibleCurseEffects(string planetName)
@@ -35,15 +29,11 @@ namespace CursedScraps.Managers
             foreach (CurseEffect effect in CursedScraps.curseEffects)
             {
                 for (int i = 0; i < GetValueFromPair(effect.Weight, planetName); i++)
-                {
                     eligibleEffects.Add(effect);
-                }
             }
             // Suppression de EXPLORATION pour DevilMansion
             if (RoundManager.Instance.dungeonGenerator.Generator.DungeonFlow.name.Equals("SDMLevel"))
-            {
                 eligibleEffects.RemoveAll(c => c.CurseName.Equals(Constants.EXPLORATION));
-            }
             return eligibleEffects;
         }
 
@@ -58,14 +48,9 @@ namespace CursedScraps.Managers
                 // Ensemble clé/valeur pour nom de la planète/valeur d'importance
                 string[] valueTab = valuePair.Split(':');
                 if (valueTab.Length == 2 && valueTab[0] == planetName)
-                {
-                    // Retourner la valeur d'importance si la clé est trouvée
-                    return int.Parse(valueTab[1]);
-                }
+                    return int.Parse(valueTab[1]); // Retourne la valeur d'importance si la clé est trouvée
                 else if (valueTab.Length == 2 && valueTab[0] == "default")
-                {
                     defaultValue = int.Parse(valueTab[1]);
-                }
             }
             return defaultValue;
         }

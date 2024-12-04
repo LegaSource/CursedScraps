@@ -12,9 +12,7 @@ namespace CursedScraps.Behaviours.Curses
                 IngamePlayerSettings.Instance.settings.micEnabled = false;
 
                 foreach (SettingsOption setting in UnityEngine.Object.FindObjectsOfType<SettingsOption>(includeInactive: true).ToList().Where(s => s.optionType == SettingsOptionType.MicEnabled))
-                {
                     setting.ToggleEnabledImage(4);
-                }
 
                 IngamePlayerSettings.Instance.SetMicrophoneEnabled();
             }

@@ -2,7 +2,7 @@
 {
     public class Deafness
     {
-        private static float savedMasterVolume = 0f;
+        public static float savedMasterVolume = 0f;
 
         public static void ApplyDeafness(bool enable)
         {
@@ -11,12 +11,9 @@
                 savedMasterVolume = IngamePlayerSettings.Instance.settings.masterVolume == 0f ? savedMasterVolume : IngamePlayerSettings.Instance.settings.masterVolume;
                 IngamePlayerSettings.Instance.ChangeMasterVolume(0);
             }
-            else
+            else if (savedMasterVolume != 0f)
             {
-                if (savedMasterVolume != 0f)
-                {
-                    IngamePlayerSettings.Instance.ChangeMasterVolume((int)(savedMasterVolume * 100));
-                }
+                IngamePlayerSettings.Instance.ChangeMasterVolume((int)(savedMasterVolume * 100));
             }
         }
     }

@@ -1,16 +1,9 @@
 ﻿namespace CursedScraps.Behaviours.Curses
 {
-    public class CurseEffect
+    public class CurseEffect(string curseName, float multiplier, string weight)
     {
-        public string CurseName { get; private set; }
-        public float Multiplier { get; private set; }
-        public string Weight { get; private set; }
-
-        public CurseEffect(string curseName, float multiplier, string weight)
-        {
-            CurseName = curseName;
-            Multiplier = multiplier;
-            Weight = weight;
-        }
+        public string CurseName { get; private set; } = curseName;
+        public float Multiplier { get; private set; } = multiplier;
+        public string Weight { get; private set; } = weight;
     }
 }

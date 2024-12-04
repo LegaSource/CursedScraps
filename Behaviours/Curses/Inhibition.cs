@@ -24,10 +24,10 @@ namespace CursedScraps.Behaviours.Curses
                     player.StopCoroutine(inhibitionCoroutine);
                     inhibitionCoroutine = null;
                 }
+
                 if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
-                {
                     IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Enable();
-                }
+
                 playerBehaviour.blockedAction = null;
             }
         }
@@ -37,9 +37,8 @@ namespace CursedScraps.Behaviours.Curses
             while (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.INHIBITION)))
             {
                 if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
-                {
                     IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Enable();
-                }
+
                 string[] actions = ConfigManager.inhibitionActions.Value.Split(',').Where(a => string.IsNullOrEmpty(playerBehaviour.blockedAction) || !a.Equals(playerBehaviour.blockedAction)).ToArray();
                 playerBehaviour.blockedAction = actions[new System.Random().Next(actions.Length)];
                 IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Disable();

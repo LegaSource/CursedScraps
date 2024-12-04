@@ -3,6 +3,7 @@ using CursedScraps.Patches;
 using System;
 using System.Collections;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 namespace CursedScraps.Managers
@@ -11,6 +12,28 @@ namespace CursedScraps.Managers
     {
         public static int timeOut = 5;
         //public static bool forceEndChrono = false;
+
+        public static TextMeshProUGUI CreateUIElement(string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 anchoredPosition, TextAlignmentOptions alignment)
+        {
+            Transform parent = GameObject.Find("Systems/UI/Canvas/Panel/GameObject/PlayerScreen").transform;
+            GameObject uiObject = new GameObject(name);
+            uiObject.transform.localPosition = Vector3.zero;
+
+            RectTransform rectTransform = uiObject.AddComponent<RectTransform>();
+            rectTransform.SetParent(parent, worldPositionStays: false);
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.pivot = pivot;
+            rectTransform.anchoredPosition = anchoredPosition;
+            rectTransform.sizeDelta = new Vector2(300f, 300f);
+
+            TextMeshProUGUI textMesh = uiObject.AddComponent<TextMeshProUGUI>();
+            textMesh.alignment = alignment;
+            textMesh.font = HUDManager.Instance.controlTipLines[0].font;
+            textMesh.fontSize = 14f;
+
+            return textMesh;
+        }
 
         public static IEnumerator StartTrackedItemCoroutine(PlayerCSBehaviour playerBehaviour)
         {
@@ -24,21 +47,15 @@ namespace CursedScraps.Managers
             }
 
             while (IsTrackedEnded(ref playerBehaviour))
-            {
                 yield return new WaitForSeconds(1f);
-            }
         }
 
         private static bool IsTrackedEnded(ref PlayerCSBehaviour playerBehaviour)
         {
             if (playerBehaviour.trackedItem != null)
-            {
                 HUDManagerPatch.distanceText.text = Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString();
-            }
             else
-            {
                 HUDManagerPatch.distanceText.text = "";
-            }
             return playerBehaviour.trackedItem != null;
         }
 
@@ -81,20 +98,14 @@ namespace CursedScraps.Managers
                 foreach (string curseName in playerBehaviour.activeCurses.Select(c => c.CurseName))
                 {
                     if (!string.IsNullOrEmpty(cursesName))
-                    {
                         cursesName += "\n";
-                    }
                     cursesName += curseName;
                 }
 
                 if (!string.IsNullOrEmpty(cursesName))
-                {
                     HUDManagerPatch.cursesText.text = cursesName;
-                }
                 else
-                {
                     HUDManagerPatch.cursesText.text = "";
-                }
             }
         }
     }

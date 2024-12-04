@@ -16,10 +16,7 @@ namespace CursedScraps.CustomInputs
         {
             get
             {
-                if (instance == null)
-                {
-                    instance = new CommunicationInputs();
-                }
+                instance ??= new CommunicationInputs();
                 return instance;
             }
             private set { instance = value; }
@@ -45,17 +42,13 @@ namespace CursedScraps.CustomInputs
         public void SpawnHotParticle(InputAction.CallbackContext context)
         {
             if (context.performed)
-            {
                 SpawnParticle(true);
-            }
         }
 
         public void SpawnColdParticle(InputAction.CallbackContext context)
         {
             if (context.performed)
-            {
                 SpawnParticle(false);
-            }
         }
 
         public void SpawnParticle(bool isHot)

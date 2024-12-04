@@ -71,6 +71,7 @@ namespace CursedScraps.Managers
         public static ConfigEntry<bool> isErrant;
         public static ConfigEntry<float> errantMultiplier;
         public static ConfigEntry<string> errantWeight;
+        public static ConfigEntry<string> errantExclusions;
         // PARALYSIS
         public static ConfigEntry<bool> isParalysis;
         public static ConfigEntry<float> paralysisMultiplier;
@@ -173,6 +174,7 @@ namespace CursedScraps.Managers
             isErrant = CursedScraps.configFile.Bind(Constants.ERRANT, "Enable", true, "Is " + Constants.ERRANT + " curse enabled?\nTeleports the player randomly when an item is picked up or placed down.");
             errantMultiplier = CursedScraps.configFile.Bind(Constants.ERRANT, "Multiplier", 2.5f, "Value multiplier for scraps with the " + Constants.ERRANT + " curse.");
             errantWeight = CursedScraps.configFile.Bind(Constants.ERRANT, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.ERRANT + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
+            errantExclusions = CursedScraps.configFile.Bind(Constants.ERRANT, "Exclusion list", "Saw Tape,Pursuer Eye,Saw Key,Saw", "List of items not affected by the " + Constants.ERRANT + " curse.\nYou can add items by separating them with a comma.");
             // PARALYSIS
             isParalysis = CursedScraps.configFile.Bind(Constants.PARALYSIS, "Enable", true, "Is " + Constants.PARALYSIS + " curse enabled?\nParalyzes the player when scanning an enemy.");
             paralysisMultiplier = CursedScraps.configFile.Bind(Constants.PARALYSIS, "Multiplier", 1.75f, "Value multiplier for scraps with the " + Constants.PARALYSIS + " curse.");
@@ -203,7 +205,7 @@ namespace CursedScraps.Managers
             isFragile = CursedScraps.configFile.Bind(Constants.FRAGILE, "Enable", true, "Is " + Constants.FRAGILE + " curse enabled?.");
             fragileMultiplier = CursedScraps.configFile.Bind(Constants.FRAGILE, "Multiplier", 2f, "Value multiplier for scraps with the " + Constants.FRAGILE + " curse.");
             fragileWeight = CursedScraps.configFile.Bind(Constants.FRAGILE, "Weight", "default:1", "Spawn weight of a scrap with the " + Constants.FRAGILE + " curse.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
-            fragileExclusions = CursedScraps.configFile.Bind(Constants.FRAGILE, "Exclusion list", "Saw Tape", "List of items not affected by the " + Constants.FRAGILE + " curse.\nYou can add items by separating them with a comma.");
+            fragileExclusions = CursedScraps.configFile.Bind(Constants.FRAGILE, "Exclusion list", "Saw Tape,Pursuer Eye,Saw Key,Saw", "List of items not affected by the " + Constants.FRAGILE + " curse.\nYou can add items by separating them with a comma.");
         }
 
         internal static List<CurseEffect> GetCurseEffectsFromConfig()

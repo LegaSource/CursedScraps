@@ -9,7 +9,7 @@ namespace CursedScraps.Behaviours.Curses
         {
             if (!ConfigManager.shadowExclusions.Value.Contains(enemy.enemyType.enemyName))
             {
-                PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
+                PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance?.localPlayerController?.GetComponent<PlayerCSBehaviour>();
                 if (playerBehaviour != null
                     && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.SHADOW)))
                 {
@@ -17,10 +17,9 @@ namespace CursedScraps.Behaviours.Curses
                     if (scanNode != null && HUDManager.Instance != null)
                     {
                         if (HUDManager.Instance.scanNodes.ContainsValue(scanNode))
-                        {
                             enemy.EnableEnemyMesh(true);
-                        }
-                        enemy.EnableEnemyMesh(false);
+                        else
+                            enemy.EnableEnemyMesh(false);
                         return;
                     }
                 }

@@ -2,24 +2,14 @@
 
 namespace CursedScraps.Values
 {
-    public class CustomItem
+    public class CustomItem(Type type, Item item, bool isSpawnable, int minSpawn, int maxSpawn, int rarity, int value = 0)
     {
-        public Type Type { get; internal set; }
-        public Item Item { get; internal set; }
-        public bool IsSpawnable { get; internal set; }
-        public int MinSpawn { get; private set; }
-        public int MaxSpawn { get; private set; }
-        public int Rarity { get; internal set; }
-        public int Value { get; internal set; }
-
-        public CustomItem(Type type, Item item, bool isSpawnable, int minSpawn, int maxSpawn, int rarity, int value = 0)
-        {
-            Type = type;
-            Item = item;
-            IsSpawnable = isSpawnable;
-            MaxSpawn = maxSpawn;
-            Rarity = rarity;
-            Value = value;
-        }
+        public Type Type { get; internal set; } = type;
+        public Item Item { get; internal set; } = item;
+        public bool IsSpawnable { get; internal set; } = isSpawnable;
+        public int MinSpawn { get; private set; } = minSpawn;
+        public int MaxSpawn { get; private set; } = maxSpawn;
+        public int Rarity { get; internal set; } = rarity;
+        public int Value { get; internal set; } = value;
     }
 }
