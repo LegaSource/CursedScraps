@@ -17,7 +17,8 @@ namespace CursedScraps.Managers
 
         // GLOBAL
         [ServerRpc(RequireOwnership = false)]
-        public void SetScrapCurseEffectServerRpc(NetworkObjectReference obj, string curseName) => SetScrapCurseEffectClientRpc(obj, curseName);
+        public void SetScrapCurseEffectServerRpc(NetworkObjectReference obj, string curseName)
+            => SetScrapCurseEffectClientRpc(obj, curseName);
 
         [ClientRpc]
         private void SetScrapCurseEffectClientRpc(NetworkObjectReference obj, string curseName)
@@ -25,11 +26,11 @@ namespace CursedScraps.Managers
             if (obj.TryGet(out var networkObject))
             {
                 GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
-                SetScrapCurseEffect(ref grabbableObject, curseName, true);
+                SetScrapCurseEffect(grabbableObject, curseName, true);
             }
         }
 
-        public void SetScrapCurseEffect(ref GrabbableObject grabbableObject, string curseName, bool applyValue)
+        public void SetScrapCurseEffect(GrabbableObject grabbableObject, string curseName, bool applyValue)
         {
             CurseEffect curseEffect = CursedScraps.curseEffects.FirstOrDefault(c => c.CurseName.Equals(curseName));
             if (curseEffect == null || grabbableObject == null) return;
@@ -61,21 +62,27 @@ namespace CursedScraps.Managers
                     }
                 }
 
-                if (grabbableObject.isHeld) EnableParticle(ref objectBehaviour, false);
+                if (grabbableObject.isHeld)
+                    EnableParticle(objectBehaviour, false);
             }
 
             ScanNodeProperties scanNode = grabbableObject.gameObject.GetComponentInChildren<ScanNodeProperties>();
             if (scanNode != null)
             {
-                if (grabbableObject.itemProperties.isScrap) scanNode.scrapValue = grabbableObject.scrapValue;
-                scanNode.subText = GetNewSubText(ref objectBehaviour, grabbableObject.scrapValue.ToString());
-                if (ConfigManager.isRedScanOn.Value) scanNode.nodeType = 1;
+                if (grabbableObject.itemProperties.isScrap)
+                    scanNode.scrapValue = grabbableObject.scrapValue;
+
+                scanNode.subText = GetNewSubText(objectBehaviour, grabbableObject.scrapValue.ToString());
+
+                if (ConfigManager.isRedScanOn.Value)
+                    scanNode.nodeType = 1;
             }
         }
 
-        public string GetNewSubText(ref ObjectCSBehaviour objectCSBehaviour, string scrapValue)
+        public string GetNewSubText(ObjectCSBehaviour objectCSBehaviour, string scrapValue)
         {
-            if (ConfigManager.isHideValue.Value) scrapValue = "???";
+            if (ConfigManager.isHideValue.Value)
+                scrapValue = "???";
 
             string curseText = "";
             bool isScrap = objectCSBehaviour.objectProperties.itemProperties.isScrap;
@@ -94,7 +101,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void RemoveAllScrapCurseEffectServerRpc(NetworkObjectReference obj) => RemoveAllScrapCurseEffectClientRpc(obj);
+        public void RemoveAllScrapCurseEffectServerRpc(NetworkObjectReference obj)
+            => RemoveAllScrapCurseEffectClientRpc(obj);
 
         [ClientRpc]
         private void RemoveAllScrapCurseEffectClientRpc(NetworkObjectReference obj)
@@ -120,7 +128,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void SetPlayerCurseEffectServerRpc(int playerId, string curseName, bool enable) => SetPlayerCurseEffectClientRpc(playerId, curseName, enable);
+        public void SetPlayerCurseEffectServerRpc(int playerId, string curseName, bool enable)
+            => SetPlayerCurseEffectClientRpc(playerId, curseName, enable);
 
         [ClientRpc]
         private void SetPlayerCurseEffectClientRpc(int playerId, string curseName, bool enable)
@@ -134,7 +143,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void RemoveAllPlayerCurseEffectServerRpc(int playerId) => RemoveAllPlayerCurseEffectClientRpc(playerId);
+        public void RemoveAllPlayerCurseEffectServerRpc(int playerId)
+            => RemoveAllPlayerCurseEffectClientRpc(playerId);
 
         [ClientRpc]
         private void RemoveAllPlayerCurseEffectClientRpc(int playerId)
@@ -149,7 +159,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void DestroyObjectServerRpc(NetworkObjectReference obj) => DestroyObjectClientRpc(obj);
+        public void DestroyObjectServerRpc(NetworkObjectReference obj)
+            => DestroyObjectClientRpc(obj);
 
         [ClientRpc]
         private void DestroyObjectClientRpc(NetworkObjectReference obj)
@@ -186,7 +197,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void EnableParticleServerRpc(NetworkObjectReference obj, bool enable) => EnableParticleClientRpc(obj, enable);
+        public void EnableParticleServerRpc(NetworkObjectReference obj, bool enable)
+            => EnableParticleClientRpc(obj, enable);
 
         [ClientRpc]
         private void EnableParticleClientRpc(NetworkObjectReference obj, bool enable)
@@ -194,11 +206,11 @@ namespace CursedScraps.Managers
             if (obj.TryGet(out var networkObject))
             {
                 ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                EnableParticle(ref objectBehaviour, enable);
+                EnableParticle(objectBehaviour, enable);
             }
         }
 
-        public void EnableParticle(ref ObjectCSBehaviour objectBehaviour, bool enable)
+        public void EnableParticle(ObjectCSBehaviour objectBehaviour, bool enable)
         {
             if (objectBehaviour != null && objectBehaviour.particleEffect != null)
                 objectBehaviour.particleEffect.gameObject.SetActive(enable);
@@ -206,7 +218,8 @@ namespace CursedScraps.Managers
 
         // DIMINUTIVE
         [ServerRpc(RequireOwnership = false)]
-        public void PushPlayerServerRpc(int playerId, Vector3 pushVector) => PushPlayerClientRpc(playerId, pushVector);
+        public void PushPlayerServerRpc(int playerId, Vector3 pushVector)
+            => PushPlayerClientRpc(playerId, pushVector);
 
         [ClientRpc]
         private void PushPlayerClientRpc(int playerId, Vector3 pushVector)
@@ -217,7 +230,32 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void KillPlayerServerRpc(int playerId, Vector3 velocity, bool spawnBody, int causeOfDeath) => KillPlayerClientRpc(playerId, velocity, spawnBody, causeOfDeath);
+        public void TeleportPlayerServerRpc(int playerId, Vector3 position, bool isInElevator, bool isInHangarShipRoom, bool isInsideFactory)
+            => TeleportPlayerClientRpc(playerId, position, isInElevator, isInHangarShipRoom, isInsideFactory);
+
+        [ClientRpc]
+        private void TeleportPlayerClientRpc(int playerId, Vector3 position, bool isInElevator, bool isInHangarShipRoom, bool isInsideFactory)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+            if (player == GameNetworkManager.Instance.localPlayerController)
+                PlayerCSManager.TeleportPlayer(player, position, isInElevator, isInHangarShipRoom, isInsideFactory);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void DamagePlayerServerRpc(int playerId, int damageNumber)
+            => DamagePlayerClientRpc(playerId, damageNumber);
+
+        [ClientRpc]
+        private void DamagePlayerClientRpc(int playerId, int damageNumber)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+            if (player == GameNetworkManager.Instance.localPlayerController)
+                player.DamagePlayer(damageNumber, hasDamageSFX: true, callRPC: true, CauseOfDeath.Unknown);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void KillPlayerServerRpc(int playerId, Vector3 velocity, bool spawnBody, int causeOfDeath)
+            => KillPlayerClientRpc(playerId, velocity, spawnBody, causeOfDeath);
 
         [ClientRpc]
         private void KillPlayerClientRpc(int playerId, Vector3 velocity, bool spawnBody, int causeOfDeath)
@@ -228,7 +266,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void AssignTrackedItemServerRpc(int playerId, NetworkObjectReference obj) => AssignTrackedItemClientRpc(playerId, obj);
+        public void AssignTrackedItemServerRpc(int playerId, NetworkObjectReference obj)
+            => AssignTrackedItemClientRpc(playerId, obj);
 
         [ClientRpc]
         private void AssignTrackedItemClientRpc(int playerId, NetworkObjectReference obj)
@@ -245,7 +284,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void SpawnParticleServerRpc(int playerId, bool isHot) => SpawnParticleClientRpc(playerId, isHot);
+        public void SpawnParticleServerRpc(int playerId, bool isHot)
+            => SpawnParticleClientRpc(playerId, isHot);
 
         [ClientRpc]
         public void SpawnParticleClientRpc(int playerId, bool isHot)
@@ -266,7 +306,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void IncrementPenaltyCounterServerRpc(NetworkObjectReference obj) => IncrementPenaltyCounterClientRpc(obj);
+        public void IncrementPenaltyCounterServerRpc(NetworkObjectReference obj)
+            => IncrementPenaltyCounterClientRpc(obj);
 
         [ClientRpc]
         private void IncrementPenaltyCounterClientRpc(NetworkObjectReference obj)
@@ -284,7 +325,8 @@ namespace CursedScraps.Managers
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void RemoveFromBagServerRpc(NetworkObjectReference obj, NetworkObjectReference bagObj) => RemoveFromBagClientRpc(obj, bagObj);
+        public void RemoveFromBagServerRpc(NetworkObjectReference obj, NetworkObjectReference bagObj)
+            => RemoveFromBagClientRpc(obj, bagObj);
 
         [ClientRpc]
         private void RemoveFromBagClientRpc(NetworkObjectReference obj, NetworkObjectReference bagObj)

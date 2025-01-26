@@ -24,7 +24,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.1.1";
+        private const string modVersion = "2.1.2";
 
         private readonly Harmony harmony = new Harmony(modGUID);
         private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -141,6 +141,14 @@ namespace CursedScraps
                 harmony.Patch(
                     AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
                     prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
+                );
+            }
+            Type toggleMutePatchClass = Type.GetType("ToggleMute.ToggleMuteManager, ToggleMute");
+            if (toggleMutePatchClass != null)
+            {
+                harmony.Patch(
+                    AccessTools.Method(toggleMutePatchClass, "OnToggleMuteKeyPressed"),
+                    prefix: new HarmonyMethod(typeof(ToggleMutePatch).GetMethod("ToggleMute"))
                 );
             }
         }

@@ -44,7 +44,8 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.GrabObjectClientRpc))]
         [HarmonyPostfix]
-        private static void PostGrabObject(ref PlayerControllerB __instance) => ObjectCSManager.PostGrabObject(ref __instance, ref __instance.currentlyHeldObjectServer);
+        private static void PostGrabObject(ref PlayerControllerB __instance)
+            => ObjectCSManager.PostGrabObject(__instance, __instance.currentlyHeldObjectServer);
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Jump_performed))]
         [HarmonyPrefix]
@@ -75,15 +76,18 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DiscardHeldObject))]
         [HarmonyPrefix]
-        private static bool PreDropObject(ref PlayerControllerB __instance) => ObjectCSManager.PreDropObject(__instance, __instance.currentlyHeldObjectServer);
+        private static bool PreDropObject(ref PlayerControllerB __instance)
+            => ObjectCSManager.PreDropObject(__instance, __instance.currentlyHeldObjectServer);
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DiscardHeldObject))]
         [HarmonyPostfix]
-        private static void PostDropObject(ref PlayerControllerB __instance) => ObjectCSManager.PostDropObject(__instance);
+        private static void PostDropObject(ref PlayerControllerB __instance)
+            => ObjectCSManager.PostDropObject(__instance);
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.PlayerHitGroundEffects))]
         [HarmonyPostfix]
-        private static void PlayerFall(ref PlayerControllerB __instance) => Fragile.PlayerFall(__instance);
+        private static void PlayerFall(ref PlayerControllerB __instance)
+            => Fragile.PlayerFall(__instance);
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.UpdatePlayerPositionClientRpc))]
         [HarmonyPostfix]
@@ -103,17 +107,39 @@ namespace CursedScraps.Patches
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
+        [HarmonyPrefix]
+        private static bool PreDamagePlayer(ref PlayerControllerB __instance, ref int damageNumber)
+        {
+            if (!__instance.IsOwner || __instance.isPlayerDead || !__instance.AllowPlayerDeath()) return true;
+
+            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+            if (Sacrifice.DamagePlayer(playerBehaviour, damageNumber)) return false;
+
+            return true;
+        }
+
+        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyPostfix]
-        private static void DamagePlayer(ref PlayerControllerB __instance)
+        private static void PostDamagePlayer(ref PlayerControllerB __instance)
         {
             if (!__instance.IsOwner || __instance.isPlayerDead || !__instance.AllowPlayerDeath()) return;
-            Fragile.DestroyHeldObjects(__instance.GetComponent<PlayerCSBehaviour>());
+
+            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+            Fragile.DestroyHeldObjects(playerBehaviour);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer))]
         [HarmonyPrefix]
-        private static void PlayerDeath(ref PlayerControllerB __instance)
-            => CursedScrapsNetworkManager.Instance.RemoveAllPlayerCurseEffectServerRpc((int)__instance.playerClientId);
+        private static bool PreKillPlayer(ref PlayerControllerB __instance)
+        {
+            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+            OneForAll.KillPlayer(playerBehaviour);
+            bool killPlayer = !Sacrifice.KillPlayer(playerBehaviour);
+
+            CursedScrapsNetworkManager.Instance.RemoveAllPlayerCurseEffectServerRpc((int)__instance.playerClientId);
+
+            return killPlayer;
+        }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.TeleportPlayer))]
         [HarmonyPrefix]
@@ -142,7 +168,7 @@ namespace CursedScraps.Patches
             PlayerCSBehaviour playerBehaviour = __instance.spectatedPlayerScript?.GetComponent<PlayerCSBehaviour>();
             if (playerBehaviour != null)
             {
-                HUDCSManager.RefreshCursesText(ref playerBehaviour);
+                HUDCSManager.RefreshCursesText(playerBehaviour);
                 Communication.ApplyCommunicationForDeadPlayer(playerBehaviour);
                 CommunicationInputs.Instance.EnableInputs();
             }

@@ -1,5 +1,7 @@
 ﻿using CursedScraps.Managers;
+using GameNetcodeStuff;
 using System.Linq;
+using UnityEngine;
 
 namespace CursedScraps.Behaviours.Curses
 {
@@ -27,7 +29,7 @@ namespace CursedScraps.Behaviours.Curses
         public static void PostGrabTeleport(PlayerCSBehaviour playerBehaviour, GrabbableObject grabbableObject)
         {
             if (CanTeleport(playerBehaviour, grabbableObject))
-                PlayerCSManager.TeleportPlayer(ref playerBehaviour.playerProperties);
+                TeleportPlayer(playerBehaviour.playerProperties);
         }
 
         // Préparation pour la téléportation avant de déposer un objet
@@ -43,7 +45,17 @@ namespace CursedScraps.Behaviours.Curses
             if (canBeTeleported)
             {
                 canBeTeleported = false;
-                PlayerCSManager.TeleportPlayer(ref playerBehaviour.playerProperties);
+                TeleportPlayer(playerBehaviour.playerProperties);
+            }
+        }
+
+        public static void TeleportPlayer(PlayerControllerB player)
+        {
+            if (!player.isInHangarShipRoom)
+            {
+                Vector3 position = RoundManager.Instance.insideAINodes[Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
+                position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
+                PlayerCSManager.TeleportPlayer(player, position, false, false, true);
             }
         }
     }

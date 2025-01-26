@@ -13,13 +13,13 @@ namespace CursedScraps.Managers
             if (playerBehaviour != null)
             {
                 if (enable && !playerBehaviour.activeCurses.Contains(curseEffect))
-                    AddCurseEffect(ref playerBehaviour, curseEffect, enable);
+                    AddCurseEffect(playerBehaviour, curseEffect, enable);
                 else if (!enable && playerBehaviour.activeCurses.Contains(curseEffect))
-                    AddCurseEffect(ref playerBehaviour, curseEffect, enable);
+                    AddCurseEffect(playerBehaviour, curseEffect, enable);
             }
         }
 
-        public static void AddCurseEffect(ref PlayerCSBehaviour playerBehaviour, CurseEffect curseEffect, bool enable)
+        public static void AddCurseEffect(PlayerCSBehaviour playerBehaviour, CurseEffect curseEffect, bool enable)
         {
             PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
             if (!string.IsNullOrEmpty(curseEffect.CurseName))
@@ -50,10 +50,10 @@ namespace CursedScraps.Managers
                             Deafness.ApplyDeafness(enable);
                             break;
                         case Constants.EXPLORATION:
-                            Exploration.ApplyExploration(enable, ref playerBehaviour);
+                            Exploration.ApplyExploration(enable, playerBehaviour);
                             break;
                         case Constants.INHIBITION:
-                            Inhibition.ApplyInhibition(enable, ref playerBehaviour);
+                            Inhibition.ApplyInhibition(enable, playerBehaviour);
                             break;
                         default:
                             break;
@@ -63,19 +63,23 @@ namespace CursedScraps.Managers
                 switch (curseEffect.CurseName)
                 {
                     case Constants.DIMINUTIVE:
-                        Diminutive.ApplyDiminutive(enable, ref playerBehaviour);
+                        Diminutive.ApplyDiminutive(enable, playerBehaviour);
                         break;
                     case Constants.COMMUNICATION:
                         Communication.ApplyCommunication(enable, playerBehaviour);
+                        break;
+                    case Constants.ONE_FOR_ALL:
+                        OneForAll.ApplyOneForAll(enable, playerBehaviour);
+                        break;
+                    case Constants.SACRIFICE:
+                        Sacrifice.ApplySacrifice(enable, playerBehaviour);
                         break;
                     default:
                         break;
                 }
 
                 if (localPlayer != playerBehaviour.playerProperties && localPlayer.isPlayerDead)
-                {
-                    HUDCSManager.RefreshCursesText(ref playerBehaviour);
-                }
+                    HUDCSManager.RefreshCursesText(playerBehaviour);
                 
                 // Reset du compteur de pénalité
                 SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
@@ -84,22 +88,17 @@ namespace CursedScraps.Managers
             }
         }
 
-        public static void TeleportPlayer(ref PlayerControllerB player)
+        public static void TeleportPlayer(PlayerControllerB player, Vector3 position, bool isInElevator, bool isInHangarShipRoom, bool isInsideFactory)
         {
-            if (!player.isInHangarShipRoom)
-            {
-                Vector3 position = RoundManager.Instance.insideAINodes[Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
-                position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
-                player.isInElevator = false;
-                player.isInHangarShipRoom = false;
-                player.isInsideFactory = true;
-                player.averageVelocity = 0f;
-                player.velocityLastFrame = Vector3.zero;
-                player.TeleportPlayer(position);
-            }
+            player.isInElevator = isInElevator;
+            player.isInHangarShipRoom = isInHangarShipRoom;
+            player.isInsideFactory = isInsideFactory;
+            player.averageVelocity = 0f;
+            player.velocityLastFrame = Vector3.zero;
+            player.TeleportPlayer(position);
         }
 
-        public static void EnablePlayerActions(ref CurseEffect curseEffect, bool enable)
+        public static void EnablePlayerActions(CurseEffect curseEffect, bool enable)
         {
             PlayerCSBehaviour playerCSBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
             if (playerCSBehaviour != null)

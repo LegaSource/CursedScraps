@@ -28,6 +28,8 @@
         public const string EXPLORATION = "Exploration";
         public const string COMMUNICATION = "Communication";
         public const string FRAGILE = "Fragile";
+        public const string ONE_FOR_ALL = "One For All";
+        public const string SACRIFICE = "Sacrifice";
         // Popup
         public const string ERROR_OCCURRED = "Error occurred";
         public const string IMPOSSIBLE_ACTION = "Impossible action";

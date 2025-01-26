@@ -4,6 +4,13 @@ namespace CursedScraps.Behaviours.Curses
 {
     public class Mute
     {
+        public static bool IsMute(PlayerCSBehaviour playerBehaviour)
+        {
+            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.MUTE)))
+                return true;
+            return false;
+        }
+
         public static void ApplyMute(bool enable)
         {
             if (enable)

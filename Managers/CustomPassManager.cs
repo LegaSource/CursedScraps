@@ -82,6 +82,7 @@ namespace CursedScraps.Managers
             wallhackPass.SetTargetRenderers(doorRenderers.ToArray(), CursedScraps.wallhackShader);
         }
 
-        public static void RemoveAuraFromDoor() => wallhackPass?.ClearTargetRenderers();
+        public static void RemoveAuraFromDoor()
+            => wallhackPass?.ClearTargetRenderers();
     }
 }

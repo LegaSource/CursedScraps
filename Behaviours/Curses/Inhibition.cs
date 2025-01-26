@@ -10,7 +10,7 @@ namespace CursedScraps.Behaviours.Curses
     {
         public static Coroutine inhibitionCoroutine;
 
-        public static void ApplyInhibition(bool enable, ref PlayerCSBehaviour playerBehaviour)
+        public static void ApplyInhibition(bool enable, PlayerCSBehaviour playerBehaviour)
         {
             PlayerControllerB player = playerBehaviour.playerProperties;
             if (enable)

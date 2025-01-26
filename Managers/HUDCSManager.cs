@@ -46,11 +46,11 @@ namespace CursedScraps.Managers
                 if (timePassed >= timeOut) break;
             }
 
-            while (IsTrackedEnded(ref playerBehaviour))
+            while (IsTrackedEnded(playerBehaviour))
                 yield return new WaitForSeconds(1f);
         }
 
-        private static bool IsTrackedEnded(ref PlayerCSBehaviour playerBehaviour)
+        private static bool IsTrackedEnded(PlayerCSBehaviour playerBehaviour)
         {
             if (playerBehaviour.trackedItem != null)
                 HUDManagerPatch.distanceText.text = Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString();
@@ -90,7 +90,7 @@ namespace CursedScraps.Managers
             return false;
         }*/
 
-        public static void RefreshCursesText(ref PlayerCSBehaviour playerBehaviour)
+        public static void RefreshCursesText(PlayerCSBehaviour playerBehaviour)
         {
             if (playerBehaviour != null)
             {

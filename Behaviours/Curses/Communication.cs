@@ -24,8 +24,8 @@ namespace CursedScraps.Behaviours.Curses
                     if (grabbableObject == null)
                     {
                         Item itemToSpawn = CursedScraps.customItems.FirstOrDefault(c => c.Item.itemName.Equals(Constants.OLD_SCROLL)).Item;
-                        Vector3 position = ObjectCSManager.GetFurthestPositionScrapSpawn(playerBehaviour.playerProperties.transform.position, ref itemToSpawn);
-                        grabbableObject = ObjectCSManager.SpawnItem(ref itemToSpawn.spawnPrefab, ref position);
+                        Vector3 position = ObjectCSManager.GetFurthestPositionScrapSpawn(playerBehaviour.playerProperties.transform.position, itemToSpawn);
+                        grabbableObject = ObjectCSManager.SpawnItem(itemToSpawn.spawnPrefab, position);
                     }
                     CursedScrapsNetworkManager.Instance.AssignTrackedItemServerRpc((int)playerBehaviour.playerProperties.playerClientId, grabbableObject.GetComponent<NetworkObject>());
                 }

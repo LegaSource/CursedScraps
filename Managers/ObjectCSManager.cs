@@ -14,19 +14,19 @@ namespace CursedScraps.Managers
     {
         public static int timeOut = 5;
 
-        public static void AddNewItems(ref RoundManager roundManager)
+        public static void AddNewItems(RoundManager roundManager)
         {
             foreach (CustomItem customItem in CursedScraps.customItems.Where(i => i.IsSpawnable))
             {
                 for (int i = 0; i < customItem.MaxSpawn; i++)
                 {
                     if (i < customItem.MinSpawn || new System.Random().Next(1, 100) <= customItem.Rarity)
-                        SpawnNewItem(ref roundManager, customItem.Item);
+                        SpawnNewItem(roundManager, customItem.Item);
                 }
             }
         }
 
-        public static void SpawnNewItem(ref RoundManager roundManager, Item itemToSpawn)
+        public static void SpawnNewItem(RoundManager roundManager, Item itemToSpawn)
         {
             try
             {
@@ -48,7 +48,7 @@ namespace CursedScraps.Managers
                 }
 
                 Vector3 position = randomScrapSpawn.transform.position + Vector3.up * 0.5f;
-                SpawnItem(ref itemToSpawn.spawnPrefab, ref position);
+                SpawnItem(itemToSpawn.spawnPrefab, position);
             }
             catch (Exception arg)
             {
@@ -56,7 +56,7 @@ namespace CursedScraps.Managers
             }
         }
 
-        public static Vector3 GetFurthestPositionScrapSpawn(Vector3 position, ref Item itemToSpawn)
+        public static Vector3 GetFurthestPositionScrapSpawn(Vector3 position, Item itemToSpawn)
         {
             RandomScrapSpawn randomScrapSpawn = UnityEngine.Object.FindObjectsOfType<RandomScrapSpawn>()
                 .Where(p => !p.spawnUsed)
@@ -73,7 +73,7 @@ namespace CursedScraps.Managers
             return randomScrapSpawn.transform.position + Vector3.up * 0.5f;
         }
 
-        public static GrabbableObject SpawnItem(ref GameObject spawnPrefab, ref Vector3 position)
+        public static GrabbableObject SpawnItem(GameObject spawnPrefab, Vector3 position)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace CursedScraps.Managers
             return null;
         }
 
-        public static bool HasItemByName(ref PlayerControllerB player, string itemName)
+        public static bool HasItemByName(PlayerControllerB player, string itemName)
         {
             for (int i = 0; i < player.ItemSlots.Length; i++)
             {
@@ -100,7 +100,7 @@ namespace CursedScraps.Managers
             return false;
         }
 
-        public static void PostGrabObject(ref PlayerControllerB player, ref GrabbableObject grabbableObject)
+        public static void PostGrabObject(PlayerControllerB player, GrabbableObject grabbableObject)
         {
             if (grabbableObject != null)
             {
@@ -148,6 +148,7 @@ namespace CursedScraps.Managers
             return true;
         }
 
-        public static void PostDropObject(PlayerControllerB player) => Errant.PostDropTeleport(player.GetComponent<PlayerCSBehaviour>());
+        public static void PostDropObject(PlayerControllerB player)
+            => Errant.PostDropTeleport(player.GetComponent<PlayerCSBehaviour>());
     }
 }

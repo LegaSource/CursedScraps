@@ -7,7 +7,7 @@ namespace CursedScraps.Behaviours.Curses
 {
     public class Paralysis
     {
-        public static void ApplyParalysis(ref PlayerCSBehaviour playerBehaviour)
+        public static void ApplyParalysis(PlayerCSBehaviour playerBehaviour)
         {
             CurseEffect curseEffect = playerBehaviour.activeCurses.Where(c => c.CurseName.Equals(Constants.PARALYSIS)).FirstOrDefault();
             if (curseEffect != null)
@@ -19,9 +19,9 @@ namespace CursedScraps.Behaviours.Curses
 
         public static IEnumerator ParalyzeCoroutine(CurseEffect curseEffect)
         {
-            PlayerCSManager.EnablePlayerActions(ref curseEffect, false);
+            PlayerCSManager.EnablePlayerActions(curseEffect, false);
             yield return new WaitForSeconds(ConfigManager.paralysisTime.Value);
-            PlayerCSManager.EnablePlayerActions(ref curseEffect, true);
+            PlayerCSManager.EnablePlayerActions(curseEffect, true);
         }
 
         public static bool IsParalysis(PlayerCSBehaviour playerBehaviour)
@@ -34,7 +34,7 @@ namespace CursedScraps.Behaviours.Curses
         public static void ScanPerformed(PlayerCSBehaviour playerBehaviour, ScanNodeProperties scanNodeProperties)
         {
             if (IsParalysis(playerBehaviour) && scanNodeProperties.nodeType == 1)
-                ApplyParalysis(ref playerBehaviour);
+                ApplyParalysis(playerBehaviour);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace CursedScraps.Behaviours.Curses
 {
     public class Diminutive
     {
-        public static void ApplyDiminutive(bool enable, ref PlayerCSBehaviour playerBehaviour)
+        public static void ApplyDiminutive(bool enable, PlayerCSBehaviour playerBehaviour)
         {
             if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController)
                 playerBehaviour.playerProperties.localVisor.gameObject.SetActive(!enable);

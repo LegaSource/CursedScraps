@@ -15,7 +15,7 @@ namespace CursedScraps.Patches
         {
             if (__instance.playerHeldBy != null)
             {
-                ObjectCSManager.PostGrabObject(ref __instance.playerHeldBy, ref gObject);
+                ObjectCSManager.PostGrabObject(__instance.playerHeldBy, gObject);
                 ObjectCSBehaviour objectBehaviour = gObject.GetComponent<ObjectCSBehaviour>();
                 if (objectBehaviour != null)
                 {

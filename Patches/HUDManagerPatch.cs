@@ -90,7 +90,8 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.SetScreenFilters))]
         [HarmonyPostfix]
-        private static void UpdateScreenFilters() => Blurry.UpdateScreenFilters(GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>());
+        private static void UpdateScreenFilters()
+            => Blurry.UpdateScreenFilters(GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>());
 
         [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.HoldInteractionFill))]
         [HarmonyPostfix]

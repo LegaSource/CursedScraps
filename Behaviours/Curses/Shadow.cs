@@ -5,7 +5,7 @@ namespace CursedScraps.Behaviours.Curses
 {
     public class Shadow
     {
-        public static void ApplyShadow(ref EnemyAI enemy)
+        public static void ApplyShadow(EnemyAI enemy)
         {
             if (!ConfigManager.shadowExclusions.Value.Contains(enemy.enemyType.enemyName))
             {

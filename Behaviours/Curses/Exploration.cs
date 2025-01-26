@@ -6,11 +6,11 @@ namespace CursedScraps.Behaviours.Curses
 {
     public class Exploration
     {
-        public static void ApplyExploration(bool enable, ref PlayerCSBehaviour playerBehaviour)
+        public static void ApplyExploration(bool enable, PlayerCSBehaviour playerBehaviour)
         {
             if (enable && playerBehaviour.targetDoor == null)
             {
-                ChangeRandomEntranceId(!playerBehaviour.playerProperties.isInsideFactory, ref playerBehaviour);
+                ChangeRandomEntranceId(!playerBehaviour.playerProperties.isInsideFactory, playerBehaviour);
             }
             else if (!enable)
             {
@@ -38,13 +38,13 @@ namespace CursedScraps.Behaviours.Curses
                 }
                 else
                 {
-                    ChangeRandomEntranceId(playerBehaviour.playerProperties.isInsideFactory, ref playerBehaviour);
+                    ChangeRandomEntranceId(playerBehaviour.playerProperties.isInsideFactory, playerBehaviour);
                 }
             }
             return true;
         }
 
-        public static void ChangeRandomEntranceId(bool isEntrance, ref PlayerCSBehaviour playerBehaviour)
+        public static void ChangeRandomEntranceId(bool isEntrance, PlayerCSBehaviour playerBehaviour)
         {
             List<EntranceTeleport> entrances = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>()
                 .Where(e => e.isEntranceToBuilding == isEntrance)

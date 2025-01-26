@@ -25,7 +25,8 @@ namespace CursedScraps.Patches
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnScrapInLevel))]
         [HarmonyPostfix]
-        private static void SpawnScraps(ref RoundManager __instance) => ObjectCSManager.AddNewItems(ref __instance);
+        private static void SpawnScraps(ref RoundManager __instance)
+            => ObjectCSManager.AddNewItems(__instance);
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SyncScrapValuesClientRpc))]
         [HarmonyPostfix]

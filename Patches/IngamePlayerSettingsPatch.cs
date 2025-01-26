@@ -10,13 +10,15 @@ namespace CursedScraps.Patches
     {
         [HarmonyPatch(typeof(IngamePlayerSettings), nameof(IngamePlayerSettings.DiscardChangedSettings))]
         [HarmonyPrefix]
-        private static bool PreventRemoveWhenDiscardSettings(ref IngamePlayerSettings __instance) => DiscardSettings(ref __instance);
+        private static bool PreventRemoveWhenDiscardSettings(ref IngamePlayerSettings __instance)
+            => DiscardSettings(__instance);
 
         [HarmonyPatch(typeof(IngamePlayerSettings), nameof(IngamePlayerSettings.SaveChangedSettings))]
         [HarmonyPrefix]
-        private static bool PreventRemoveWhenConfirmSettings(ref IngamePlayerSettings __instance) => DiscardSettings(ref __instance);
+        private static bool PreventRemoveWhenConfirmSettings(ref IngamePlayerSettings __instance)
+            => DiscardSettings(__instance);
 
-        public static bool DiscardSettings(ref IngamePlayerSettings ingamePlayerSettings)
+        public static bool DiscardSettings(IngamePlayerSettings ingamePlayerSettings)
         {
             PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance?.localPlayerController?.GetComponent<PlayerCSBehaviour>();
             if (ConfigManager.globalPrevent.Value && playerBehaviour != null)
