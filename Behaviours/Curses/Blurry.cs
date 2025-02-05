@@ -7,15 +7,15 @@ namespace CursedScraps.Behaviours.Curses
     {
         public static bool IsBlurry(PlayerCSBehaviour playerBehaviour)
         {
-            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.BLURRY)))
-                return true;
-            return false;
+            if (playerBehaviour == null) return false;
+            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.BLURRY))) return false;
+            return true;
         }
 
         public static void UpdateScreenFilters(PlayerCSBehaviour playerBehaviour)
         {
-            if (IsBlurry(playerBehaviour))
-                HUDManager.Instance.drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
+            if (!IsBlurry(playerBehaviour)) return;
+            HUDManager.Instance.drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
         }
     }
 }

@@ -9,12 +9,10 @@ namespace CursedScraps.Patches.ModsPatches
     {
         public static bool ToggleMute()
         {
-            if (Mute.IsMute(GameNetworkManager.Instance.localPlayerController?.GetComponent<PlayerCSBehaviour>()))
-            {
-                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
-                return false;
-            }
-            return true;
+            if (!Mute.IsMute(GameNetworkManager.Instance.localPlayerController?.GetComponent<PlayerCSBehaviour>())) return true;
+
+            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
+            return false;
         }
     }
 }

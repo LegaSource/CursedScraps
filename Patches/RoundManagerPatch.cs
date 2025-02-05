@@ -32,41 +32,30 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void SetCurseObject()
         {
-            if (!hasBeenExecutedOnHost
-                && GameNetworkManager.Instance?.localPlayerController != null
-                && (GameNetworkManager.Instance.localPlayerController.IsHost || GameNetworkManager.Instance.localPlayerController.IsServer))
-            {
-                hasBeenExecutedOnHost = true;
-                foreach (GrabbableObject grabbableObject in Object.FindObjectsOfType<GrabbableObject>()
-                    .Where(g => (string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(g.itemProperties.itemName))
-                                && g.isInFactory
-                                && !g.isInShipRoom
-                                && g.scrapValue > 0)
-                    .ToList())
-                {
-                    string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
-                    if (CurseCSManager.IsCursed(planetName))
-                    {
-                        CurseEffect curseEffect = CurseCSManager.GetRandomCurseEffect(planetName);
-                        if (curseEffect != null)
-                        {
-                            NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
-                            if (networkObject != null && networkObject.IsSpawned)
-                                CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(networkObject, curseEffect.CurseName);
-                        }
-                    }
-                }
-            }
-        }
+            if (hasBeenExecutedOnHost) return;
+            if (GameNetworkManager.Instance?.localPlayerController == null) return;
+            if (!(GameNetworkManager.Instance.localPlayerController.IsHost || GameNetworkManager.Instance.localPlayerController.IsServer)) return;
 
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.DetectElevatorIsRunning))]
-        [HarmonyPrefix]
-        private static void EndGame()
-        {
-            // Destruction des objets qui possèdent toujours une malédiction en étant dans le vaisseau
-            ObjectCSBehaviour objectBehaviour;
-            foreach (GrabbableObject grabbableObject in Object.FindObjectsOfType<GrabbableObject>().Where(g => g.isInElevator && (objectBehaviour = g.GetComponent<ObjectCSBehaviour>()) != null && objectBehaviour.curseEffects.Count > 0))
-                CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(grabbableObject.GetComponent<NetworkObject>());
+            hasBeenExecutedOnHost = true;
+            foreach (GrabbableObject grabbableObject in Object.FindObjectsOfType<GrabbableObject>())
+            {
+                if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
+                if (!(string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(grabbableObject.itemProperties.itemName))) continue;
+                if (!grabbableObject.isInFactory) continue;
+                if (grabbableObject.isInShipRoom) continue;
+                if (grabbableObject.scrapValue <= 0) continue;
+
+                string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
+                if (!CurseCSManager.IsCursed(planetName)) continue;
+
+                CurseEffect curseEffect = CurseCSManager.GetRandomCurseEffect(planetName);
+                if (curseEffect == null) continue;
+
+                NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
+                if (networkObject == null || !networkObject.IsSpawned) continue;
+                    
+                CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(networkObject, curseEffect.CurseName);
+            }
         }
     }
 }

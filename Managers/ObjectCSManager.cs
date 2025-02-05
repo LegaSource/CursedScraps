@@ -16,8 +16,10 @@ namespace CursedScraps.Managers
 
         public static void AddNewItems(RoundManager roundManager)
         {
-            foreach (CustomItem customItem in CursedScraps.customItems.Where(i => i.IsSpawnable))
+            foreach (CustomItem customItem in CursedScraps.customItems)
             {
+                if (!customItem.IsSpawnable) continue;
+
                 for (int i = 0; i < customItem.MaxSpawn; i++)
                 {
                     if (i < customItem.MinSpawn || new System.Random().Next(1, 100) <= customItem.Rarity)
@@ -33,7 +35,7 @@ namespace CursedScraps.Managers
                 System.Random random = new System.Random();
                 List<RandomScrapSpawn> listRandomScrapSpawn = UnityEngine.Object.FindObjectsOfType<RandomScrapSpawn>().Where(s => !s.spawnUsed).ToList();
 
-                if (listRandomScrapSpawn.Count <= 0) return;
+                if (!listRandomScrapSpawn.Any()) return;
 
                 int indexRandomScrapSpawn = random.Next(0, listRandomScrapSpawn.Count);
                 RandomScrapSpawn randomScrapSpawn = listRandomScrapSpawn[indexRandomScrapSpawn];
@@ -90,61 +92,47 @@ namespace CursedScraps.Managers
             return null;
         }
 
-        public static bool HasItemByName(PlayerControllerB player, string itemName)
-        {
-            for (int i = 0; i < player.ItemSlots.Length; i++)
-            {
-                if (player.ItemSlots[i] != null && player.ItemSlots[i].itemProperties.itemName.Equals(itemName))
-                    return true;
-            }
-            return false;
-        }
-
         public static void PostGrabObject(PlayerControllerB player, GrabbableObject grabbableObject)
         {
-            if (grabbableObject != null)
-            {
-                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null && objectBehaviour.curseEffects.Any())
-                {
-                    CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), false);
+            if (grabbableObject == null) return;
 
-                    // Affectation des malédictions au joueur
-                    foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
-                        PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, true);
-                }
+            // Comportements spécifiques pour les malédictions au moment du grab
+            PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour == null) return;
 
-                // Comportements spécifiques pour les malédictions au moment du grab
-                PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
-                if (playerBehaviour != null)
-                {
-                    Errant.PostGrabTeleport(playerBehaviour, grabbableObject);
-                    Diminutive.ScaleObject(playerBehaviour, grabbableObject, false);
-                }
-            }
+            Errant.PostGrabTeleport(playerBehaviour, grabbableObject);
+            Diminutive.ScaleObject(playerBehaviour, grabbableObject, false);
+
+            ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
+            if (objectBehaviour == null) return;
+            if (!objectBehaviour.curseEffects.Any()) return;
+
+            CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), false);
+
+            // Affectation des malédictions au joueur
+            foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
+                PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, true);
         }
 
         public static bool PreDropObject(PlayerControllerB player, GrabbableObject grabbableObject)
         {
             PlayerCSBehaviour playerBehaviour = player.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
-            {
-                if (!player.isInHangarShipRoom)
-                {
-                    if (Captive.IsCaptive(playerBehaviour, true)) return false;
-                    if (!Fragile.PreDropObject(playerBehaviour, grabbableObject)) return false;
-                    Errant.PreDropTeleport(playerBehaviour, grabbableObject);
-                }
+            if (playerBehaviour == null) return true;
 
-                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null
-                    && objectBehaviour.curseEffects.Count > 0)
-                {
-                    // Suppression des malédictions
-                    if (player.isInHangarShipRoom) CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(grabbableObject.GetComponent<NetworkObject>());
-                    else CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), true);
-                }
+            if (!player.isInHangarShipRoom)
+            {
+                if (Captive.IsCaptive(playerBehaviour, true)) return false;
+                if (!Fragile.PreDropObject(playerBehaviour, grabbableObject)) return false;
+                Errant.PreDropTeleport(playerBehaviour, grabbableObject);
             }
+
+            ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
+            if (objectBehaviour == null) return true;
+            if (!objectBehaviour.curseEffects.Any()) return true;
+
+            // Suppression des malédictions
+            if (player.isInHangarShipRoom) CursedScrapsNetworkManager.Instance.RemoveAllScrapCurseEffectServerRpc(grabbableObject.GetComponent<NetworkObject>());
+            else CursedScrapsNetworkManager.Instance.EnableParticleServerRpc(grabbableObject.GetComponent<NetworkObject>(), true);
             return true;
         }
 

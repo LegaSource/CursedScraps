@@ -14,25 +14,22 @@ namespace CursedScraps.Behaviours.Items
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            if (buttonDown && playerHeldBy != null)
+
+            if (!buttonDown) return;
+            if (playerHeldBy == null) return;
+
+            if (assignedPlayer != null)
             {
-                if (assignedPlayer != null)
+                PlayerCSBehaviour playerBehaviour = assignedPlayer.GetComponent<PlayerCSBehaviour>();
+                if (playerHeldBy != assignedPlayer && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.COMMUNICATION)))
                 {
-                    PlayerCSBehaviour playerBehaviour = assignedPlayer.GetComponent<PlayerCSBehaviour>();
-                    if (playerHeldBy == assignedPlayer)
-                    {
-                        playerBehaviour.canEscape = true;
-                    }
-                    // Si l'autre joueur possède toujours la malédiction on n'utilise pas l'item sinon on peut
-                    else if (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.COMMUNICATION)))
-                    {
-                        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "This item is assigned to another player");
-                        return;
-                    }
+                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "This item is assigned to another player");
+                    return;
                 }
-                StartCoroutine(ShowEntrancesCoroutine(playerHeldBy));
-                CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(GetComponent<NetworkObject>());
+                playerBehaviour.canEscape = true;
             }
+            StartCoroutine(ShowEntrancesCoroutine(playerHeldBy));
+            CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(GetComponent<NetworkObject>());
         }
 
         public IEnumerator ShowEntrancesCoroutine(PlayerControllerB player)

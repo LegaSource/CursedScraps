@@ -1,6 +1,7 @@
 ﻿using CursedScraps.Behaviours;
 using CursedScraps.Behaviours.Curses;
 using GameNetcodeStuff;
+using System.Linq;
 using UnityEngine;
 
 namespace CursedScraps.Managers
@@ -101,20 +102,19 @@ namespace CursedScraps.Managers
         public static void EnablePlayerActions(CurseEffect curseEffect, bool enable)
         {
             PlayerCSBehaviour playerCSBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
-            if (playerCSBehaviour != null)
+            if (playerCSBehaviour == null) return;
+
+            string[] actionNames = { "Move", "Jump", "Crouch", "Interact", "ItemSecondaryUse", "ItemTertiaryUse", "ActivateItem", "SwitchItem", "InspectItem", "Emote1", "Emote2" };
+
+            if (enable)
+                playerCSBehaviour.actionsBlockedBy.Remove(curseEffect);
+            else if (!playerCSBehaviour.actionsBlockedBy.Contains(curseEffect))
+                playerCSBehaviour.actionsBlockedBy.Add(curseEffect);
+
+            foreach (string actionName in actionNames)
             {
-                string[] actionNames = { "Move", "Jump", "Crouch", "Interact", "ItemSecondaryUse", "ItemTertiaryUse", "ActivateItem", "SwitchItem", "InspectItem", "Emote1", "Emote2" };
-
-                if (enable)
-                    playerCSBehaviour.actionsBlockedBy.Remove(curseEffect);
-                else if (!playerCSBehaviour.actionsBlockedBy.Contains(curseEffect))
-                    playerCSBehaviour.actionsBlockedBy.Add(curseEffect);
-
-                foreach (string actionName in actionNames)
-                {
-                    if (enable && playerCSBehaviour.actionsBlockedBy.Count == 0) IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Enable();
-                    else IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Disable();
-                }
+                if (enable && !playerCSBehaviour.actionsBlockedBy.Any()) IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Enable();
+                else IngamePlayerSettings.Instance.playerInput.actions.FindAction(actionName, false).Disable();
             }
         }
     }

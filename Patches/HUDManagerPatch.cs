@@ -52,38 +52,41 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void ScanPerformed(ref HUDManager __instance, ref ScanNodeProperties node)
         {
-            if (__instance.scanNodes.ContainsValue(node))
+            if (!__instance.scanNodes.ContainsValue(node)) return;
+
+            PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
+            Paralysis.ScanPerformed(playerBehaviour, node);
+
+            // Penalty mode
+            if (string.IsNullOrEmpty(ConfigManager.penaltyMode.Value)) return;
+            if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_NONE)) return;
+
+            ObjectCSBehaviour objectBehaviour = node.GetComponentInParent<ObjectCSBehaviour>();
+            if (objectBehaviour == null) return;
+            if (!objectBehaviour.curseEffects.Any()) return;
+
+            SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+
+            if (!sorBehaviour.scannedObjects.Contains(objectBehaviour.objectProperties))
+                CursedScrapsNetworkManager.Instance.IncrementPenaltyCounterServerRpc(objectBehaviour.objectProperties.GetComponent<NetworkObject>());
+
+            if (sorBehaviour.counter < ConfigManager.penaltyCounter.Value) return;
+
+            foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
             {
-                PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
-                Paralysis.ScanPerformed(playerBehaviour, node);
-
-                // Penalty mode
-                if (!string.IsNullOrEmpty(ConfigManager.penaltyMode.Value) && !ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_NONE))
+                if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_HARD))
                 {
-                    ObjectCSBehaviour objectBehaviour = node.GetComponentInParent<ObjectCSBehaviour>();
-                    if (objectBehaviour != null && objectBehaviour.curseEffects.Count() > 0)
+                    foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
                     {
-                        SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+                        if (!player.isPlayerControlled) continue;
+                        if (player.isPlayerDead) continue;
 
-                        if (!sorBehaviour.scannedObjects.Contains(objectBehaviour.objectProperties))
-                            CursedScrapsNetworkManager.Instance.IncrementPenaltyCounterServerRpc(objectBehaviour.objectProperties.GetComponent<NetworkObject>());
-
-                        if (sorBehaviour.counter >= ConfigManager.penaltyCounter.Value)
-                        {
-                            foreach (CurseEffect curseEffect in objectBehaviour.curseEffects)
-                            {
-                                if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_HARD))
-                                {
-                                    foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts.Where(p => p.isPlayerControlled && !p.isPlayerDead))
-                                        CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)player.playerClientId, curseEffect.CurseName, true);
-                                }
-                                else if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_MEDIUM))
-                                {
-                                    CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, curseEffect.CurseName, true);
-                                }
-                            }
-                        }
+                        CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)player.playerClientId, curseEffect.CurseName, true);
                     }
+                }
+                else if (ConfigManager.penaltyMode.Value.Equals(Constants.PENALTY_MEDIUM))
+                {
+                    CursedScrapsNetworkManager.Instance.SetPlayerCurseEffectServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, curseEffect.CurseName, true);
                 }
             }
         }
@@ -100,14 +103,15 @@ namespace CursedScraps.Patches
             if (!__result) return;
 
             PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance.localPlayerController.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour == null) return;
+
             EntranceTeleport entranceTeleport = playerBehaviour.playerProperties.hoveringOverTrigger?.gameObject.GetComponent<EntranceTeleport>();
-            if (entranceTeleport != null)
+            if (entranceTeleport == null) return;
+
+            if (!Exploration.EntranceInteraction(playerBehaviour, entranceTeleport)
+                || !Communication.CanEscape(playerBehaviour, "A curse prevents you from using this doorway."))
             {
-                if (!Exploration.EntranceInteraction(playerBehaviour, entranceTeleport)
-                    || !Communication.CanEscape(playerBehaviour, "A curse prevents you from using this doorway."))
-                {
-                    __result = false;
-                }
+                __result = false;
             }
         }
     }

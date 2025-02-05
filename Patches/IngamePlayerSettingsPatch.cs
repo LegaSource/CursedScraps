@@ -21,15 +21,15 @@ namespace CursedScraps.Patches
         public static bool DiscardSettings(IngamePlayerSettings ingamePlayerSettings)
         {
             PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance?.localPlayerController?.GetComponent<PlayerCSBehaviour>();
-            if (ConfigManager.globalPrevent.Value && playerBehaviour != null)
+            if (!ConfigManager.globalPrevent.Value) return true;
+            if (playerBehaviour == null) return true;
+
+            var activeCurses = playerBehaviour.activeCurses.Select(c => c.CurseName);
+            if (activeCurses.Contains(Constants.CONFUSION) || activeCurses.Contains(Constants.MUTE) || activeCurses.Contains(Constants.DEAFNESS))
             {
-                var activeCurses = playerBehaviour.activeCurses.Select(c => c.CurseName);
-                if (activeCurses.Contains(Constants.CONFUSION) || activeCurses.Contains(Constants.MUTE) || activeCurses.Contains(Constants.DEAFNESS))
-                {
-                    ingamePlayerSettings.SetChangesNotAppliedTextVisible(visible: false);
-                    ingamePlayerSettings.unsavedSettings.CopySettings(ingamePlayerSettings.settings);
-                    return false;
-                }
+                ingamePlayerSettings.SetChangesNotAppliedTextVisible(visible: false);
+                ingamePlayerSettings.unsavedSettings.CopySettings(ingamePlayerSettings.settings);
+                return false;
             }
             return true;
         }
@@ -39,15 +39,15 @@ namespace CursedScraps.Patches
         private static bool PreventUpdateSettings(ref SettingsOptionType optionType)
         {
             PlayerCSBehaviour playerBehaviour = GameNetworkManager.Instance?.localPlayerController?.GetComponent<PlayerCSBehaviour>();
-            if (ConfigManager.globalPrevent.Value && playerBehaviour != null)
+            if (!ConfigManager.globalPrevent.Value) return true;
+            if (playerBehaviour == null) return true;
+
+            var activeCurses = playerBehaviour.activeCurses.Select(c => c.CurseName);
+            if ((activeCurses.Contains(Constants.MUTE) && (optionType == SettingsOptionType.MicEnabled || optionType == SettingsOptionType.MicDevice || optionType == SettingsOptionType.MicPushToTalk))
+                    || (activeCurses.Contains(Constants.DEAFNESS) && (optionType == SettingsOptionType.MasterVolume || optionType == SettingsOptionType.MicDevice)))
             {
-                var activeCurses = playerBehaviour.activeCurses.Select(c => c.CurseName);
-                if ((activeCurses.Contains(Constants.MUTE) && (optionType == SettingsOptionType.MicEnabled || optionType == SettingsOptionType.MicDevice || optionType == SettingsOptionType.MicPushToTalk))
-                     || (activeCurses.Contains(Constants.DEAFNESS) && (optionType == SettingsOptionType.MasterVolume || optionType == SettingsOptionType.MicDevice)))
-                {
-                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
-                    return false;
-                }
+                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from performing this action.");
+                return false;
             }
             return true;
         }

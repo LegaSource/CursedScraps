@@ -16,20 +16,19 @@ namespace CursedScraps.Behaviours.Curses
             if (enable)
             {
                 inhibitionCoroutine ??= player.StartCoroutine(InhibitionCoroutine(playerBehaviour));
+                return;
             }
-            else
+
+            if (inhibitionCoroutine != null)
             {
-                if (inhibitionCoroutine != null)
-                {
-                    player.StopCoroutine(inhibitionCoroutine);
-                    inhibitionCoroutine = null;
-                }
-
-                if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
-                    IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Enable();
-
-                playerBehaviour.blockedAction = null;
+                player.StopCoroutine(inhibitionCoroutine);
+                inhibitionCoroutine = null;
             }
+
+            if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
+                IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Enable();
+
+            playerBehaviour.blockedAction = null;
         }
 
         public static IEnumerator InhibitionCoroutine(PlayerCSBehaviour playerBehaviour)

@@ -24,7 +24,7 @@ namespace CursedScraps
     {
         private const string modGUID = "Lega.CursedScraps";
         private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.1.2";
+        private const string modVersion = "2.1.3";
 
         private readonly Harmony harmony = new Harmony(modGUID);
         private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -80,10 +80,8 @@ namespace CursedScraps
                 foreach (var method in methods)
                 {
                     var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attributes.Length > 0)
-                    {
-                        method.Invoke(null, null);
-                    }
+                    if (attributes.Length == 0) continue;
+                    method.Invoke(null, null);
                 }
             }
         }
@@ -127,30 +125,42 @@ namespace CursedScraps
 
         public static void PatchOtherMods(Harmony harmony)
         {
+            AddonFusionPatch(harmony);
+            BagConfigPatch(harmony);
+            ToggleMutePatch(harmony);
+        }
+
+        public static void AddonFusionPatch(Harmony harmony)
+        {
             Type capsuleHoiPoiClass = Type.GetType("AddonFusion.Behaviours.CapsuleHoiPoi, AddonFusion");
-            if (capsuleHoiPoiClass != null)
-            {
-                harmony.Patch (
-                    AccessTools.Method(capsuleHoiPoiClass, "SetComponentClientRpc"),
-                    prefix: new HarmonyMethod(typeof(AddonFusionPatch).GetMethod("PreGrabObject"))
-                );
-            }
+            if (capsuleHoiPoiClass == null) return;
+
+            harmony.Patch(
+                AccessTools.Method(capsuleHoiPoiClass, "SetComponentClientRpc"),
+                prefix: new HarmonyMethod(typeof(AddonFusionPatch).GetMethod("PreGrabObject"))
+            );
+        }
+
+        public static void BagConfigPatch(Harmony harmony)
+        {
             Type beltBagPatchClass = Type.GetType("BagConfig.Patches.BeltBagPatch, BagConfig");
-            if (beltBagPatchClass != null)
-            {
-                harmony.Patch(
-                    AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
-                    prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
-                );
-            }
+            if (beltBagPatchClass == null) return;
+
+            harmony.Patch(
+                AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
+                prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
+            );
+        }
+
+        public static void ToggleMutePatch(Harmony harmony)
+        {
             Type toggleMutePatchClass = Type.GetType("ToggleMute.ToggleMuteManager, ToggleMute");
-            if (toggleMutePatchClass != null)
-            {
-                harmony.Patch(
-                    AccessTools.Method(toggleMutePatchClass, "OnToggleMuteKeyPressed"),
-                    prefix: new HarmonyMethod(typeof(ToggleMutePatch).GetMethod("ToggleMute"))
-                );
-            }
+            if (toggleMutePatchClass == null) return;
+
+            harmony.Patch(
+                AccessTools.Method(toggleMutePatchClass, "OnToggleMuteKeyPressed"),
+                prefix: new HarmonyMethod(typeof(ToggleMutePatch).GetMethod("ToggleMute"))
+            );
         }
     }
 }

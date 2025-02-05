@@ -15,11 +15,11 @@ namespace CursedScraps.Patches
         [HarmonyPostfix]
         private static void ConnectPlayer(ref PlayerControllerB __instance)
         {
-            if (__instance.isPlayerControlled && __instance.GetComponent<PlayerCSBehaviour>() == null)
-            {
-                PlayerCSBehaviour playerBehaviour = __instance.gameObject.AddComponent<PlayerCSBehaviour>();
-                playerBehaviour.playerProperties = __instance;
-            }
+            if (!__instance.isPlayerControlled) return;
+            if (__instance.GetComponent<PlayerCSBehaviour>() != null) return;
+
+            PlayerCSBehaviour playerBehaviour = __instance.gameObject.AddComponent<PlayerCSBehaviour>();
+            playerBehaviour.playerProperties = __instance;
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Update))]
@@ -27,19 +27,17 @@ namespace CursedScraps.Patches
         private static void UpdatePlayerControllerB(ref PlayerControllerB __instance)
         {
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null && playerBehaviour.targetDoor != null)
+            if (playerBehaviour == null) return;
+            if (playerBehaviour.targetDoor == null) return;
+
+            if (Vector3.Distance(playerBehaviour.targetDoor.transform.position, __instance.transform.position) > ConfigManager.explorationDistance.Value)
             {
-                if (Vector3.Distance(playerBehaviour.targetDoor.transform.position, __instance.transform.position) > ConfigManager.explorationDistance.Value)
-                {
-                    if (!playerBehaviour.isRendered) CustomPassManager.SetupCustomPassForDoor(playerBehaviour.targetDoor);
-                    playerBehaviour.isRendered = true;
-                }
-                else
-                {
-                    CustomPassManager.RemoveAuraFromDoor();
-                    playerBehaviour.isRendered = false;
-                }
+                if (!playerBehaviour.isRendered) CustomPassManager.SetupCustomPassForDoor(playerBehaviour.targetDoor);
+                playerBehaviour.isRendered = true;
+                return;
             }
+            CustomPassManager.RemoveAuraFromDoor();
+            playerBehaviour.isRendered = false;
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.GrabObjectClientRpc))]
@@ -52,12 +50,13 @@ namespace CursedScraps.Patches
         private static bool PreventJump(ref PlayerControllerB __instance)
         {
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
-            {
-                if ((!string.IsNullOrEmpty(playerBehaviour.blockedAction) && playerBehaviour.blockedAction.Equals("Jump")) || playerBehaviour.actionsBlockedBy.Count > 0)
-                    return false;
-                if (Diminutive.PreventJump(playerBehaviour)) return false;
-            }
+            if (playerBehaviour == null) return true;
+
+            if (string.IsNullOrEmpty(playerBehaviour.blockedAction)) return true;
+            if (!playerBehaviour.blockedAction.Equals("Jump")) return true;
+
+            if (playerBehaviour.actionsBlockedBy.Any()) return false;
+            if (Diminutive.PreventJump(playerBehaviour)) return false;
             return true;
         }
 
@@ -66,11 +65,12 @@ namespace CursedScraps.Patches
         private static bool PreventCrouch(ref PlayerControllerB __instance)
         {
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
-            {
-                if ((!string.IsNullOrEmpty(playerBehaviour.blockedAction) && playerBehaviour.blockedAction.Equals("Crouch")) || playerBehaviour.actionsBlockedBy.Count > 0)
-                    return false;
-            }
+            if (playerBehaviour == null) return true;
+
+            if (string.IsNullOrEmpty(playerBehaviour.blockedAction)) return true;
+            if (!playerBehaviour.blockedAction.Equals("Crouch")) return true;
+
+            if (playerBehaviour.actionsBlockedBy.Any()) return false;
             return true;
         }
 
@@ -94,16 +94,15 @@ namespace CursedScraps.Patches
         private static void UpdatePlayerPositionClientRpc(ref PlayerControllerB __instance)
         {
             PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
+            if (playerBehaviour == null) return;
+
+            if (__instance.isInHangarShipRoom)
             {
-                if (__instance.isInHangarShipRoom)
-                {
-                    // Suppression des malédictions
-                    foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
-                        PlayerCSManager.SetPlayerCurseEffect(__instance, curseEffect, false);
-                }
-                Diminutive.PlayerCollision(playerBehaviour);
+                // Suppression des malédictions
+                foreach (CurseEffect curseEffect in playerBehaviour.activeCurses.ToList())
+                    PlayerCSManager.SetPlayerCurseEffect(__instance, curseEffect, false);
             }
+            Diminutive.PlayerCollision(playerBehaviour);
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
@@ -145,20 +144,16 @@ namespace CursedScraps.Patches
         [HarmonyPrefix]
         private static bool PreventTeleportPlayer(ref PlayerControllerB __instance)
         {
-            if (__instance == GameNetworkManager.Instance.localPlayerController)
-            {
-                PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
-                if (!__instance.isInsideFactory
-                    && (Exploration.IsExploration(playerBehaviour)
-                        || !Communication.CanEscape(playerBehaviour, "A curse prevented you from being teleported.")))
-                {
-                    __instance.isInElevator = false;
-                    __instance.isInHangarShipRoom = false;
-                    __instance.isInsideFactory = true;
-                    return false;
-                }
-            }
-            return true;
+            if (__instance != GameNetworkManager.Instance.localPlayerController) return true;
+
+            PlayerCSBehaviour playerBehaviour = __instance.GetComponent<PlayerCSBehaviour>();
+            if (__instance.isInsideFactory) return true;
+            if (!(Exploration.IsExploration(playerBehaviour) || !Communication.CanEscape(playerBehaviour, "A curse prevented you from being teleported."))) return true;
+
+            __instance.isInElevator = false;
+            __instance.isInHangarShipRoom = false;
+            __instance.isInsideFactory = true;
+            return false;
         }
 
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.SpectateNextPlayer))]
@@ -166,12 +161,11 @@ namespace CursedScraps.Patches
         private static void SwitchSpectatedPlayer(ref PlayerControllerB __instance)
         {
             PlayerCSBehaviour playerBehaviour = __instance.spectatedPlayerScript?.GetComponent<PlayerCSBehaviour>();
-            if (playerBehaviour != null)
-            {
-                HUDCSManager.RefreshCursesText(playerBehaviour);
-                Communication.ApplyCommunicationForDeadPlayer(playerBehaviour);
-                CommunicationInputs.Instance.EnableInputs();
-            }
+            if (playerBehaviour == null) return;
+
+            HUDCSManager.RefreshCursesText(playerBehaviour);
+            Communication.ApplyCommunicationForDeadPlayer(playerBehaviour);
+            CommunicationInputs.Instance.EnableInputs();
         }
     }
 }

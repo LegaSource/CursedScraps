@@ -6,28 +6,25 @@ namespace CursedScraps.Behaviours.Curses
     {
         public static bool IsMute(PlayerCSBehaviour playerBehaviour)
         {
-            if (playerBehaviour != null && playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.MUTE)))
-                return true;
-            return false;
+            if (playerBehaviour == null) return false;
+            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.MUTE))) return false;
+            return true;
         }
 
         public static void ApplyMute(bool enable)
         {
-            if (enable)
-            {
-                IngamePlayerSettings.Instance.unsavedSettings.micEnabled = false;
-                IngamePlayerSettings.Instance.settings.micEnabled = false;
+            IngamePlayerSettings.Instance.unsavedSettings.micEnabled = !enable;
+            IngamePlayerSettings.Instance.settings.micEnabled = !enable;
 
-                foreach (SettingsOption setting in UnityEngine.Object.FindObjectsOfType<SettingsOption>(includeInactive: true).ToList().Where(s => s.optionType == SettingsOptionType.MicEnabled))
-                    setting.ToggleEnabledImage(4);
+            if (!enable) return;
 
-                IngamePlayerSettings.Instance.SetMicrophoneEnabled();
-            }
-            else
+            foreach (SettingsOption setting in UnityEngine.Object.FindObjectsOfType<SettingsOption>(includeInactive: true))
             {
-                IngamePlayerSettings.Instance.unsavedSettings.micEnabled = true;
-                IngamePlayerSettings.Instance.settings.micEnabled = true;
-            }
+                if (setting.optionType != SettingsOptionType.MicEnabled) continue;
+                setting.ToggleEnabledImage(4);
+            }  
+
+            IngamePlayerSettings.Instance.SetMicrophoneEnabled();
         }
     }
 }

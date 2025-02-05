@@ -107,24 +107,21 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void RemoveAllScrapCurseEffectClientRpc(NetworkObjectReference obj)
         {
-            if (obj.TryGet(out var networkObject))
-            {
-                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
-                {
-                    objectBehaviour.curseEffects.Clear();
+            if (!obj.TryGet(out var networkObject)) return;
 
-                    if (objectBehaviour.particleEffect != null)
-                        Destroy(objectBehaviour.particleEffect);
+            ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
+            if (objectBehaviour == null) return;
 
-                    ScanNodeProperties scanNode = objectBehaviour.objectProperties.gameObject.GetComponentInChildren<ScanNodeProperties>();
-                    if (scanNode != null)
-                    {
-                        scanNode.subText = $"Value: ${scanNode.scrapValue}";
-                        scanNode.nodeType = (objectBehaviour.objectProperties.itemProperties.isScrap ? 2 : 0);
-                    }
-                }
-            }
+            objectBehaviour.curseEffects.Clear();
+
+            if (objectBehaviour.particleEffect != null)
+                Destroy(objectBehaviour.particleEffect);
+
+            ScanNodeProperties scanNode = objectBehaviour.objectProperties.gameObject.GetComponentInChildren<ScanNodeProperties>();
+            if (scanNode == null) return;
+
+            scanNode.subText = $"Value: ${scanNode.scrapValue}";
+            scanNode.nodeType = (objectBehaviour.objectProperties.itemProperties.isScrap ? 2 : 0);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -134,12 +131,11 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void SetPlayerCurseEffectClientRpc(int playerId, string curseName, bool enable)
         {
-            CurseEffect curseEffect = CursedScraps.curseEffects.Where(c => c.CurseName.Equals(curseName)).FirstOrDefault();
-            if (curseEffect != null)
-            {
-                PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-                PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, enable);
-            }
+            CurseEffect curseEffect = CursedScraps.curseEffects.FirstOrDefault(c => c.CurseName.Equals(curseName));
+            if (curseEffect == null) return;
+
+            PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
+            PlayerCSManager.SetPlayerCurseEffect(player, curseEffect, enable);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -165,35 +161,31 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void DestroyObjectClientRpc(NetworkObjectReference obj)
         {
-            if (obj.TryGet(out var networkObject))
-                DestroyObject(networkObject.gameObject.GetComponentInChildren<GrabbableObject>());
+            if (!obj.TryGet(out var networkObject)) return;
+            DestroyObject(networkObject.gameObject.GetComponentInChildren<GrabbableObject>());
         }
 
         public void DestroyObject(GrabbableObject grabbableObject)
         {
-            if (grabbableObject != null)
+            if (grabbableObject == null) return;
+
+            if (grabbableObject is FlashlightItem flashlight && flashlight.isBeingUsed)
             {
-                if (grabbableObject is FlashlightItem flashlight)
-                {
-                    if (flashlight.isBeingUsed)
-                    {
-                        flashlight.isBeingUsed = false;
-                        flashlight.usingPlayerHelmetLight = false;
-                        flashlight.flashlightBulbGlow.enabled = false;
-                        flashlight.SwitchFlashlight(on: false);
-                    }
-                }
-                else if (grabbableObject is BeltBagItem beltBagItem)
-                {
-                    SkinnedMeshRenderer[] skinnedMeshRenderers = beltBagItem.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
-                    foreach (SkinnedMeshRenderer skinnedMeshRenderer in skinnedMeshRenderers.ToList())
-                        Destroy(skinnedMeshRenderer);
-                }
-                ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
-                if (objectBehaviour != null && objectBehaviour.particleEffect != null)
-                    Destroy(objectBehaviour.particleEffect);
-                grabbableObject.DestroyObjectInHand(grabbableObject.playerHeldBy);
+                flashlight.isBeingUsed = false;
+                flashlight.usingPlayerHelmetLight = false;
+                flashlight.flashlightBulbGlow.enabled = false;
+                flashlight.SwitchFlashlight(on: false);
             }
+            else if (grabbableObject is BeltBagItem beltBagItem)
+            {
+                SkinnedMeshRenderer[] skinnedMeshRenderers = beltBagItem.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
+                foreach (SkinnedMeshRenderer skinnedMeshRenderer in skinnedMeshRenderers.ToList())
+                    Destroy(skinnedMeshRenderer);
+            }
+            ObjectCSBehaviour objectBehaviour = grabbableObject.GetComponent<ObjectCSBehaviour>();
+            if (objectBehaviour != null && objectBehaviour.particleEffect != null)
+                Destroy(objectBehaviour.particleEffect);
+            grabbableObject.DestroyObjectInHand(grabbableObject.playerHeldBy);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -203,17 +195,18 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void EnableParticleClientRpc(NetworkObjectReference obj, bool enable)
         {
-            if (obj.TryGet(out var networkObject))
-            {
-                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                EnableParticle(objectBehaviour, enable);
-            }
+            if (!obj.TryGet(out var networkObject)) return;
+
+            ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
+            EnableParticle(objectBehaviour, enable);
         }
 
         public void EnableParticle(ObjectCSBehaviour objectBehaviour, bool enable)
         {
-            if (objectBehaviour != null && objectBehaviour.particleEffect != null)
-                objectBehaviour.particleEffect.gameObject.SetActive(enable);
+            if (objectBehaviour == null) return;
+            if (objectBehaviour.particleEffect == null) return;
+            
+            objectBehaviour.particleEffect.gameObject.SetActive(enable);
         }
 
         // DIMINUTIVE
@@ -225,8 +218,9 @@ namespace CursedScraps.Managers
         private void PushPlayerClientRpc(int playerId, Vector3 pushVector)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-            if (player == GameNetworkManager.Instance.localPlayerController)
-                player.thisController.Move(pushVector);
+            if (player != GameNetworkManager.Instance.localPlayerController) return;
+            
+            player.thisController.Move(pushVector);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -237,8 +231,9 @@ namespace CursedScraps.Managers
         private void TeleportPlayerClientRpc(int playerId, Vector3 position, bool isInElevator, bool isInHangarShipRoom, bool isInsideFactory)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-            if (player == GameNetworkManager.Instance.localPlayerController)
-                PlayerCSManager.TeleportPlayer(player, position, isInElevator, isInHangarShipRoom, isInsideFactory);
+            if (player != GameNetworkManager.Instance.localPlayerController) return;
+            
+            PlayerCSManager.TeleportPlayer(player, position, isInElevator, isInHangarShipRoom, isInsideFactory);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -249,8 +244,9 @@ namespace CursedScraps.Managers
         private void DamagePlayerClientRpc(int playerId, int damageNumber)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-            if (player == GameNetworkManager.Instance.localPlayerController)
-                player.DamagePlayer(damageNumber, hasDamageSFX: true, callRPC: true, CauseOfDeath.Unknown);
+            if (player != GameNetworkManager.Instance.localPlayerController) return;
+            
+            player.DamagePlayer(damageNumber, hasDamageSFX: true, callRPC: true, CauseOfDeath.Unknown);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -261,8 +257,9 @@ namespace CursedScraps.Managers
         private void KillPlayerClientRpc(int playerId, Vector3 velocity, bool spawnBody, int causeOfDeath)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
-            if (player == GameNetworkManager.Instance.localPlayerController)
-                player.KillPlayer(velocity, spawnBody, (CauseOfDeath)causeOfDeath);
+            if (player != GameNetworkManager.Instance.localPlayerController) return;
+            
+            player.KillPlayer(velocity, spawnBody, (CauseOfDeath)causeOfDeath);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -272,15 +269,14 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void AssignTrackedItemClientRpc(int playerId, NetworkObjectReference obj)
         {
-            if (obj.TryGet(out var networkObject))
-            {
-                GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
-                PlayerCSBehaviour playerBehaviour = StartOfRound.Instance.allPlayerObjects[playerId].GetComponentInChildren<PlayerCSBehaviour>();
-                playerBehaviour.trackedItem = grabbableObject;
+            if (!obj.TryGet(out var networkObject)) return;
 
-                if (grabbableObject is OldScroll oldScroll)
-                    oldScroll.assignedPlayer = playerBehaviour.playerProperties;
-            }
+            GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
+            PlayerCSBehaviour playerBehaviour = StartOfRound.Instance.allPlayerObjects[playerId].GetComponentInChildren<PlayerCSBehaviour>();
+            playerBehaviour.trackedItem = grabbableObject;
+
+            if (grabbableObject is not OldScroll oldScroll) return;
+            oldScroll.assignedPlayer = playerBehaviour.playerProperties;
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -293,10 +289,8 @@ namespace CursedScraps.Managers
             PlayerControllerB player = StartOfRound.Instance.allPlayerObjects[playerId].GetComponent<PlayerControllerB>();
             GameObject spawnObject;
 
-            if (isHot)
-                spawnObject = Instantiate(CursedScraps.hotParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
-            else
-                spawnObject = Instantiate(CursedScraps.coldParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
+            if (isHot) spawnObject = Instantiate(CursedScraps.hotParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
+            else spawnObject = Instantiate(CursedScraps.coldParticle, player.gameplayCamera.transform.position, player.gameplayCamera.transform.rotation);
 
             spawnObject.transform.SetParent(player.transform);
             spawnObject.transform.localScale = player.transform.localScale;
@@ -312,16 +306,14 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void IncrementPenaltyCounterClientRpc(NetworkObjectReference obj)
         {
-            if (obj.TryGet(out var networkObject))
-            {
-                ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
-                if (objectBehaviour != null)
-                {
-                    SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
-                    sorBehaviour.counter++;
-                    sorBehaviour.scannedObjects.Add(objectBehaviour.objectProperties);
-                }
-            }
+            if (!obj.TryGet(out var networkObject)) return;
+
+            ObjectCSBehaviour objectBehaviour = networkObject.gameObject.GetComponentInChildren<ObjectCSBehaviour>();
+            if (objectBehaviour == null) return;
+
+            SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
+            sorBehaviour.counter++;
+            sorBehaviour.scannedObjects.Add(objectBehaviour.objectProperties);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -331,13 +323,16 @@ namespace CursedScraps.Managers
         [ClientRpc]
         private void RemoveFromBagClientRpc(NetworkObjectReference obj, NetworkObjectReference bagObj)
         {
-            if (obj.TryGet(out var networkObject) && bagObj.TryGet(out var bagNetworkObject))
-            {
-                GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
-                BeltBagItem beltBagItem = bagNetworkObject.gameObject.GetComponentInChildren<GrabbableObject>() as BeltBagItem;
-                if (grabbableObject != null && beltBagItem != null)
-                    beltBagItem.objectsInBag.Remove(grabbableObject);
-            }
+            if (!obj.TryGet(out var networkObject)) return;
+            if (!bagObj.TryGet(out var bagNetworkObject)) return;
+
+            GrabbableObject grabbableObject = networkObject.gameObject.GetComponentInChildren<GrabbableObject>();
+            if (grabbableObject == null) return;
+
+            BeltBagItem beltBagItem = bagNetworkObject.gameObject.GetComponentInChildren<GrabbableObject>() as BeltBagItem;
+            if (beltBagItem == null) return;
+            
+            beltBagItem.objectsInBag.Remove(grabbableObject);
         }
     }
 }

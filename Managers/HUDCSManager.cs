@@ -52,10 +52,9 @@ namespace CursedScraps.Managers
 
         private static bool IsTrackedEnded(PlayerCSBehaviour playerBehaviour)
         {
-            if (playerBehaviour.trackedItem != null)
-                HUDManagerPatch.distanceText.text = Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString();
-            else
-                HUDManagerPatch.distanceText.text = "";
+            HUDManagerPatch.distanceText.text = playerBehaviour.trackedItem != null
+                ? Math.Round(Vector3.Distance(playerBehaviour.playerProperties.transform.position, playerBehaviour.trackedItem.transform.position), 1).ToString()
+                : "";
             return playerBehaviour.trackedItem != null;
         }
 
@@ -92,21 +91,16 @@ namespace CursedScraps.Managers
 
         public static void RefreshCursesText(PlayerCSBehaviour playerBehaviour)
         {
-            if (playerBehaviour != null)
-            {
-                string cursesName = null;
-                foreach (string curseName in playerBehaviour.activeCurses.Select(c => c.CurseName))
-                {
-                    if (!string.IsNullOrEmpty(cursesName))
-                        cursesName += "\n";
-                    cursesName += curseName;
-                }
+            if (playerBehaviour == null) return;
 
+            string cursesName = null;
+            foreach (string curseName in playerBehaviour.activeCurses.Select(c => c.CurseName))
+            {
                 if (!string.IsNullOrEmpty(cursesName))
-                    HUDManagerPatch.cursesText.text = cursesName;
-                else
-                    HUDManagerPatch.cursesText.text = "";
+                    cursesName += "\n";
+                cursesName += curseName;
             }
+            HUDManagerPatch.cursesText.text = !string.IsNullOrEmpty(cursesName) ? cursesName : "";
         }
     }
 }

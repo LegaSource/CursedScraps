@@ -7,8 +7,7 @@ namespace CursedScraps.Managers
     {
         public static bool IsCursed(string planetName)
         {
-            if (new System.Random().Next(1, 100) <= GetValueFromPair(ConfigManager.globalChance.Value, planetName))
-                return true;
+            if (new System.Random().Next(1, 100) <= GetValueFromPair(ConfigManager.globalChance.Value, planetName)) return true;
             return false;
         }
 
@@ -16,10 +15,8 @@ namespace CursedScraps.Managers
         {
             List<CurseEffect> eligibleEffects = GetEligibleCurseEffects(planetName);
             // Sélectionner un effet aléatoire parmi les effets éligibles
-            if (eligibleEffects.Count > 0)
-                return eligibleEffects[new System.Random().Next(eligibleEffects.Count)];
-            else
-                return null;
+            if (eligibleEffects.Count > 0) return eligibleEffects[new System.Random().Next(eligibleEffects.Count)];
+            else return null;
         }
 
         public static List<CurseEffect> GetEligibleCurseEffects(string planetName)

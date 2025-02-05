@@ -58,8 +58,10 @@ namespace CursedScraps.Managers
         public static void SetupCustomPassForDoors(bool isEntrance)
         {
             List<Renderer> doorRenderers = new List<Renderer>();
-            foreach (EntranceTeleport entranceTeleport in FindObjectsOfType<EntranceTeleport>().Where(e => e.isEntranceToBuilding == isEntrance))
+            foreach (EntranceTeleport entranceTeleport in FindObjectsOfType<EntranceTeleport>())
             {
+                if (entranceTeleport.isEntranceToBuilding != isEntrance) continue;
+
                 doorRenderers.AddRange(FindObjectsOfType<Renderer>()
                     .Where(r => Vector3.Distance(r.transform.position, entranceTeleport.transform.position) == 0f
                                 && ConfigManager.rendererNames.Value.Any(n => r.name.StartsWith(n)))

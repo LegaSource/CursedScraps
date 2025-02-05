@@ -25,8 +25,8 @@ namespace CursedScraps.Patches
                 }
             }
 
-            if (__instance.GetComponent<SORCSBehaviour>() == null)
-                __instance.gameObject.AddComponent<SORCSBehaviour>();
+            if (__instance.GetComponent<SORCSBehaviour>() != null) return;
+            __instance.gameObject.AddComponent<SORCSBehaviour>();
         }
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.OnDisable))]
@@ -40,11 +40,11 @@ namespace CursedScraps.Patches
         {
             foreach (PlayerControllerB player in __instance.allPlayerScripts)
             {
-                if (player.isPlayerControlled && player.GetComponent<PlayerCSBehaviour>() == null)
-                {
-                    PlayerCSBehaviour playerBehaviour = player.gameObject.AddComponent<PlayerCSBehaviour>();
-                    playerBehaviour.playerProperties = player;
-                }
+                if (!player.isPlayerControlled) continue;
+                if (player.GetComponent<PlayerCSBehaviour>() != null) continue;
+
+                PlayerCSBehaviour playerBehaviour = player.gameObject.AddComponent<PlayerCSBehaviour>();
+                playerBehaviour.playerProperties = player;
             }
         }
 

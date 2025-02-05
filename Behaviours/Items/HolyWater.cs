@@ -9,20 +9,19 @@ namespace CursedScraps.Behaviours.Items
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            if (buttonDown && playerHeldBy != null)
+
+            if (!buttonDown) return;
+            if (playerHeldBy == null) return;
+
+            PlayerCSBehaviour playerBehaviour = playerHeldBy.GetComponent<PlayerCSBehaviour>();
+            if (playerBehaviour != null && playerBehaviour.activeCurses.Any())
             {
-                PlayerCSBehaviour playerBehaviour = playerHeldBy.GetComponent<PlayerCSBehaviour>();
-                if (playerBehaviour != null && playerBehaviour.activeCurses.Count() > 0)
-                {
-                    CursedScrapsNetworkManager.Instance.RemoveAllPlayerCurseEffectServerRpc((int)playerHeldBy.playerClientId);
-                    playerHeldBy.DropAllHeldItemsAndSync();
-                    CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(GetComponent<NetworkObject>());
-                }
-                else
-                {
-                    HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You have no active curse.");
-                }
+                CursedScrapsNetworkManager.Instance.RemoveAllPlayerCurseEffectServerRpc((int)playerHeldBy.playerClientId);
+                playerHeldBy.DropAllHeldItemsAndSync();
+                CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(GetComponent<NetworkObject>());
+                return;
             }
+            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You have no active curse.");
         }
     }
 }
