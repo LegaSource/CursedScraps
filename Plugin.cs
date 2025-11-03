@@ -1,166 +1,114 @@
-﻿using BepInEx.Configuration;
-using BepInEx;
+﻿using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Logging;
+using CursedScraps.Behaviours.Items;
+using CursedScraps.Managers;
+using CursedScraps.Patches;
+using CursedScraps.Patches.ModsPatches;
 using HarmonyLib;
+using LethalLib.Modules;
+using System;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using LethalLib.Modules;
-using BepInEx.Logging;
-using CursedScraps.Patches;
-using System.Collections.Generic;
-using CursedScraps.Managers;
-using CursedScraps.Values;
-using CursedScraps.Patches.ModsPatches;
-using System;
-using CursedScraps.Behaviours.Items;
-using CursedScraps.Behaviours.Curses;
-using CursedScraps.CustomInputs;
-using System.Linq;
+using static LegaFusionCore.Registries.LFCSpawnableItemRegistry;
 
-namespace CursedScraps
+namespace CursedScraps;
+
+[BepInPlugin(modGUID, modName, modVersion)]
+public class CursedScraps : BaseUnityPlugin
 {
-    [BepInPlugin(modGUID, modName, modVersion)]
-    public class CursedScraps : BaseUnityPlugin
+    internal const string modGUID = "Lega.CursedScraps";
+    internal const string modName = "Cursed Scraps";
+    internal const string modVersion = "3.0.0";
+
+    private readonly Harmony harmony = new Harmony(modGUID);
+    private static readonly AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
+    internal static ManualLogSource mls;
+    public static ConfigFile configFile;
+
+    public static GameObject managerPrefab = NetworkPrefabs.CreateNetworkPrefab("CursedScrapsNetworkManager");
+
+    // Shaders
+    public static Material cursedShader;
+
+    public void Awake()
     {
-        private const string modGUID = "Lega.CursedScraps";
-        private const string modName = "Cursed Scraps";
-        private const string modVersion = "2.1.3";
+        mls = BepInEx.Logging.Logger.CreateLogSource("CursedScraps");
+        configFile = Config;
+        ConfigManager.Load();
+        ConfigManager.RegisterCursesFromConfig();
 
-        private readonly Harmony harmony = new Harmony(modGUID);
-        private readonly static AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
-        internal static ManualLogSource mls;
-        public static ConfigFile configFile;
+        LoadManager();
+        NetcodePatcher();
+        LoadItems();
+        LoadShaders();
 
-        public static List<CustomItem> customItems = new List<CustomItem>();
-        public static List<CurseEffect> curseEffects = new List<CurseEffect>();
-        public static GameObject managerPrefab = NetworkPrefabs.CreateNetworkPrefab("CursedScrapsNetworkManager");
-        public static GameObject curseParticle;
-        public static GameObject hotParticle;
-        public static GameObject coldParticle;
-        public static Material wallhackShader;
+        harmony.PatchAll(typeof(IngamePlayerSettingsPatch));
+        harmony.PatchAll(typeof(StartOfRoundPatch));
+        harmony.PatchAll(typeof(RoundManagerPatch));
+        harmony.PatchAll(typeof(BeltBagInventoryUIPatch));
+        harmony.PatchAll(typeof(BeltBagItemPatch));
+        harmony.PatchAll(typeof(HUDManagerPatch));
+        harmony.PatchAll(typeof(PlayerControllerBPatch));
+        harmony.PatchAll(typeof(EnemyAIPatch));
+        PatchOtherMods(harmony);
+    }
 
-        public void Awake()
+    public static void LoadManager()
+    {
+        Utilities.FixMixerGroups(managerPrefab);
+        _ = managerPrefab.AddComponent<CursedScrapsNetworkManager>();
+    }
+
+    private static void NetcodePatcher()
+    {
+        Type[] types = Assembly.GetExecutingAssembly().GetTypes();
+        foreach (Type type in types)
         {
-            mls = BepInEx.Logging.Logger.CreateLogSource("CursedScraps");
-            configFile = Config;
-            ConfigManager.Load();
-            curseEffects = ConfigManager.GetCurseEffectsFromConfig();
-            _ = CommunicationInputs.Instance;
-
-            LoadManager();
-            NetcodePatcher();
-            LoadItems();
-            LoadParticles();
-            LoadShaders();
-
-            harmony.PatchAll(typeof(IngamePlayerSettingsPatch));
-            harmony.PatchAll(typeof(StartOfRoundPatch));
-            harmony.PatchAll(typeof(RoundManagerPatch));
-            harmony.PatchAll(typeof(GrabbableObjectPatch));
-            harmony.PatchAll(typeof(BeltBagInventoryUIPatch));
-            harmony.PatchAll(typeof(BeltBagItemPatch));
-            harmony.PatchAll(typeof(HUDManagerPatch));
-            harmony.PatchAll(typeof(PlayerControllerBPatch));
-            harmony.PatchAll(typeof(EnemyAIPatch));
-            PatchOtherMods(harmony);
-        }
-
-        public static void LoadManager()
-        {
-            Utilities.FixMixerGroups(managerPrefab);
-            managerPrefab.AddComponent<CursedScrapsNetworkManager>();
-        }
-
-        private static void NetcodePatcher()
-        {
-            var types = Assembly.GetExecutingAssembly().GetTypes();
-            foreach (var type in types)
+            MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            foreach (MethodInfo method in methods)
             {
-                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                foreach (var method in methods)
-                {
-                    var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attributes.Length == 0) continue;
-                    method.Invoke(null, null);
-                }
+                object[] attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                if (attributes.Length == 0) continue;
+                _ = method.Invoke(null, null);
             }
         }
+    }
 
-        public static void LoadItems()
-        {
-            if (ConfigManager.isHolyWater.Value) customItems.Add(new CustomItem(typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), true, ConfigManager.minHolyWater.Value, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value));
-            customItems.Add(new CustomItem(typeof(OldScroll), bundle.LoadAsset<Item>("Assets/OldScroll/OldScrollItem.asset"), ConfigManager.isOldScrollSpawnable.Value, ConfigManager.minOldScroll.Value, ConfigManager.maxOldScroll.Value, ConfigManager.oldScrollRarity.Value));
+    public static void LoadItems()
+    {
+        if (ConfigManager.isHolyWater.Value)
+            Add(typeof(HolyWater), bundle.LoadAsset<Item>("Assets/HolyWater/HolyWaterItem.asset"), ConfigManager.minHolyWater.Value, ConfigManager.maxHolyWater.Value, ConfigManager.holyWaterRarity.Value);
+    }
 
-            foreach (CustomItem customItem in customItems.ToList())
-            {
-                var script = customItem.Item.spawnPrefab.AddComponent(customItem.Type) as PhysicsProp;
-                script.grabbable = true;
-                script.grabbableToEnemies = true;
-                script.itemProperties = customItem.Item;
+    public static void LoadShaders() => cursedShader = bundle.LoadAsset<Material>("Assets/Shaders/CursedMaterial.mat");
 
-                NetworkPrefabs.RegisterNetworkPrefab(customItem.Item.spawnPrefab);
-                Utilities.FixMixerGroups(customItem.Item.spawnPrefab);
-                Items.RegisterItem(customItem.Item);
-            }
-        }
+    public static void PatchOtherMods(Harmony harmony)
+    {
+        BagConfigPatch(harmony);
+        ToggleMutePatch(harmony);
+    }
 
-        public static void LoadParticles()
-        {
-            HashSet<GameObject> gameObjects = new HashSet<GameObject>
-            {
-                (curseParticle = bundle.LoadAsset<GameObject>("Assets/Particles/CurseParticle.prefab")),
-                (hotParticle = bundle.LoadAsset<GameObject>("Assets/Particles/HotParticle.prefab")),
-                (coldParticle = bundle.LoadAsset<GameObject>("Assets/Particles/ColdParticle.prefab"))
-            };
+    public static void BagConfigPatch(Harmony harmony)
+    {
+        Type beltBagPatchClass = Type.GetType("BagConfig.Patches.BeltBagPatch, BagConfig");
+        if (beltBagPatchClass == null) return;
 
-            foreach (GameObject gameObject in gameObjects)
-            {
-                NetworkPrefabs.RegisterNetworkPrefab(gameObject);
-                Utilities.FixMixerGroups(gameObject);
-            }
-        }
+        _ = harmony.Patch(
+            AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
+            prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
+        );
+    }
 
-        public static void LoadShaders()
-            => wallhackShader = bundle.LoadAsset<Material>("Assets/Shaders/WallhackMaterial.mat");
+    public static void ToggleMutePatch(Harmony harmony)
+    {
+        Type toggleMutePatchClass = Type.GetType("ToggleMute.ToggleMuteManager, ToggleMute");
+        if (toggleMutePatchClass == null) return;
 
-        public static void PatchOtherMods(Harmony harmony)
-        {
-            AddonFusionPatch(harmony);
-            BagConfigPatch(harmony);
-            ToggleMutePatch(harmony);
-        }
-
-        public static void AddonFusionPatch(Harmony harmony)
-        {
-            Type capsuleHoiPoiClass = Type.GetType("AddonFusion.Behaviours.CapsuleHoiPoi, AddonFusion");
-            if (capsuleHoiPoiClass == null) return;
-
-            harmony.Patch(
-                AccessTools.Method(capsuleHoiPoiClass, "SetComponentClientRpc"),
-                prefix: new HarmonyMethod(typeof(AddonFusionPatch).GetMethod("PreGrabObject"))
-            );
-        }
-
-        public static void BagConfigPatch(Harmony harmony)
-        {
-            Type beltBagPatchClass = Type.GetType("BagConfig.Patches.BeltBagPatch, BagConfig");
-            if (beltBagPatchClass == null) return;
-
-            harmony.Patch(
-                AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
-                prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
-            );
-        }
-
-        public static void ToggleMutePatch(Harmony harmony)
-        {
-            Type toggleMutePatchClass = Type.GetType("ToggleMute.ToggleMuteManager, ToggleMute");
-            if (toggleMutePatchClass == null) return;
-
-            harmony.Patch(
-                AccessTools.Method(toggleMutePatchClass, "OnToggleMuteKeyPressed"),
-                prefix: new HarmonyMethod(typeof(ToggleMutePatch).GetMethod("ToggleMute"))
-            );
-        }
+        _ = harmony.Patch(
+            AccessTools.Method(toggleMutePatchClass, "OnToggleMuteKeyPressed"),
+            prefix: new HarmonyMethod(typeof(ToggleMutePatch).GetMethod("ToggleMute"))
+        );
     }
 }

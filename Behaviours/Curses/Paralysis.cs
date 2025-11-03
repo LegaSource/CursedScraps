@@ -1,41 +1,59 @@
 ﻿using CursedScraps.Managers;
-using System.Collections;
-using System.Linq;
+using GameNetcodeStuff;
+using LegaFusionCore.Registries;
+using LegaFusionCore.Utilities;
 using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Paralysis(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Paralysis
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.PARALYSIS));
+    private static readonly string[] actionNames = ["Move", "Jump", "Crouch", "Interact", "ItemSecondaryUse", "ItemTertiaryUse", "ActivateItem", "SwitchItem", "InspectItem", "Emote1", "Emote2"];
+    private static bool isParalyzed = false;
+    private static float paralyzeTimer = 0f;
+
+    public static void ScanPerformed(PlayerControllerB player, ScanNodeProperties scanNodeProperties)
     {
-        public static void ApplyParalysis(PlayerCSBehaviour playerBehaviour)
-        {
-            CurseEffect curseEffect = playerBehaviour.activeCurses.FirstOrDefault(c => c.CurseName.Equals(Constants.PARALYSIS));
-            if (curseEffect == null) return;
+        if (!HasCurse(player.gameObject, Constants.PARALYSIS) || scanNodeProperties.nodeType != 1) return;
 
-            playerBehaviour.playerProperties.JumpToFearLevel(0.6f);
-            playerBehaviour.playerProperties.StartCoroutine(ParalyzeCoroutine(curseEffect));
+        foreach (string actionName in actionNames)
+        {
+            isParalyzed = true;
+            player.JumpToFearLevel(0.6f);
+            LFCPlayerActionRegistry.AddLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
         }
+    }
 
-        public static IEnumerator ParalyzeCoroutine(CurseEffect curseEffect)
+    public override void Update(GameObject entity)
+    {
+        base.Update(entity);
+        if (!isParalyzed) return;
+
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (!LFCUtilities.ShouldBeLocalPlayer(player)) return;
+
+        paralyzeTimer += Time.deltaTime;
+        if (paralyzeTimer >= ConfigManager.paralysisTime.Value)
         {
-            PlayerCSManager.EnablePlayerActions(curseEffect, false);
-            yield return new WaitForSeconds(ConfigManager.paralysisTime.Value);
-            PlayerCSManager.EnablePlayerActions(curseEffect, true);
+            isParalyzed = false;
+            paralyzeTimer = 0f;
+            foreach (string actionName in actionNames) LFCPlayerActionRegistry.RemoveLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
         }
+    }
 
-        public static bool IsParalysis(PlayerCSBehaviour playerBehaviour)
-        {
-            if (playerBehaviour == null) return false;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.PARALYSIS))) return false;
-            return true;
-        }
+    public override void Expire(GameObject entity)
+    {
+        base.Expire(entity);
 
-        public static void ScanPerformed(PlayerCSBehaviour playerBehaviour, ScanNodeProperties scanNodeProperties)
+        if (isParalyzed)
         {
-            if (!IsParalysis(playerBehaviour)) return;
-            if (scanNodeProperties.nodeType != 1) return;
-            
-            ApplyParalysis(playerBehaviour);
+            PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+            if (!LFCUtilities.ShouldBeLocalPlayer(player)) return;
+
+            foreach (string actionName in actionNames) LFCPlayerActionRegistry.RemoveLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
         }
     }
 }

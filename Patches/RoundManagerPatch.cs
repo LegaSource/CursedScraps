@@ -1,61 +1,75 @@
-﻿using CursedScraps.Behaviours;
-using CursedScraps.Behaviours.Curses;
-using CursedScraps.Managers;
+﻿using CursedScraps.Managers;
 using HarmonyLib;
+using LegaFusionCore.Registries;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
-using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Patches
+namespace CursedScraps.Patches;
+
+internal class RoundManagerPatch
 {
-    internal class RoundManagerPatch
+    [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.waitForScrapToSpawnToSync))]
+    [HarmonyPostfix]
+    private static IEnumerator ApplyObjectCurse(IEnumerator result)
     {
-        private static bool hasBeenExecutedOnHost = false;
+        while (result.MoveNext()) yield return result.Current;
 
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.LoadNewLevel))]
-        [HarmonyPostfix]
-        private static void LoadNewGame()
+        foreach (GrabbableObject grabbableObject in LFCSpawnRegistry.GetAllAs<GrabbableObject>())
         {
-            hasBeenExecutedOnHost = false;
+            if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
+            if (!(string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(grabbableObject.itemProperties.itemName))) continue;
+            if (!grabbableObject.isInFactory || grabbableObject.isInShipRoom || grabbableObject.scrapValue <= 0) continue;
 
-            SORCSBehaviour sorBehaviour = StartOfRound.Instance.GetComponent<SORCSBehaviour>();
-            sorBehaviour.counter = 0;
-            sorBehaviour.scannedObjects.Clear();
+            string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
+            if (new System.Random().Next(1, 100) > GetValueFromPair(ConfigManager.globalChance.Value, planetName)) continue;
+
+            string curseName = GetRandomCurse(planetName);
+            if (string.IsNullOrEmpty(curseName)) continue;
+
+            NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
+            if (networkObject == null || !networkObject.IsSpawned) continue;
+
+            CursedScrapsNetworkManager.Instance.ApplyObjectCurseEveryoneRpc(networkObject, curseName);
         }
+    }
 
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnScrapInLevel))]
-        [HarmonyPostfix]
-        private static void SpawnScraps(ref RoundManager __instance)
-            => ObjectCSManager.AddNewItems(__instance);
+    public static string GetRandomCurse(string planetName)
+    {
+        List<string> eligibleCurses = GetEligibleCurses(planetName);
+        // Sélectionner un effet aléatoire parmi les effets éligibles
+        return eligibleCurses.Count > 0 ? eligibleCurses[new System.Random().Next(eligibleCurses.Count)] : null;
+    }
 
-        [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SyncScrapValuesClientRpc))]
-        [HarmonyPostfix]
-        private static void SetCurseObject()
+    public static List<string> GetEligibleCurses(string planetName)
+    {
+        // Ajout des malédictions éligibles en fonction de leur valeur d'importance
+        List<string> eligibleCurses = [];
+        foreach (CurseEffectType curseType in curseEffectTypes)
         {
-            if (hasBeenExecutedOnHost) return;
-            if (GameNetworkManager.Instance?.localPlayerController == null) return;
-            if (!(GameNetworkManager.Instance.localPlayerController.IsHost || GameNetworkManager.Instance.localPlayerController.IsServer)) return;
-
-            hasBeenExecutedOnHost = true;
-            foreach (GrabbableObject grabbableObject in Object.FindObjectsOfType<GrabbableObject>())
-            {
-                if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
-                if (!(string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(grabbableObject.itemProperties.itemName))) continue;
-                if (!grabbableObject.isInFactory) continue;
-                if (grabbableObject.isInShipRoom) continue;
-                if (grabbableObject.scrapValue <= 0) continue;
-
-                string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
-                if (!CurseCSManager.IsCursed(planetName)) continue;
-
-                CurseEffect curseEffect = CurseCSManager.GetRandomCurseEffect(planetName);
-                if (curseEffect == null) continue;
-
-                NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
-                if (networkObject == null || !networkObject.IsSpawned) continue;
-                    
-                CursedScrapsNetworkManager.Instance.SetScrapCurseEffectServerRpc(networkObject, curseEffect.CurseName);
-            }
+            for (int i = 0; i < GetValueFromPair(curseType.Weight, planetName); i++)
+                eligibleCurses.Add(curseType.Name);
         }
+        return eligibleCurses;
+    }
+
+    public static int GetValueFromPair(string valueByMoons, string planetName)
+    {
+        // Tableau contenant tous les ensembles clé/valeur pour les noms de planètes/valeurs d'importances
+        string[] valuePairs = valueByMoons.Split(',');
+        int defaultValue = 0;
+
+        foreach (string valuePair in valuePairs)
+        {
+            // Ensemble clé/valeur pour nom de la planète/valeur d'importance
+            string[] valueTab = valuePair.Split(':');
+            if (valueTab.Length == 2 && valueTab[0] == planetName)
+                return int.Parse(valueTab[1]); // Retourne la valeur d'importance si la clé est trouvée
+            else if (valueTab.Length == 2 && valueTab[0] == "default")
+                defaultValue = int.Parse(valueTab[1]);
+        }
+        return defaultValue;
     }
 }

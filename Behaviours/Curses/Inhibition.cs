@@ -1,51 +1,59 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
-using System.Collections;
+using LegaFusionCore.Registries;
+using LegaFusionCore.Utilities;
 using System.Linq;
 using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Inhibition(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Inhibition
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.INHIBITION));
+    private static float inhibitionTimer;
+    private static string lockedAction;
+
+    public override void Apply(GameObject entity)
     {
-        public static Coroutine inhibitionCoroutine;
+        base.Apply(entity);
 
-        public static void ApplyInhibition(bool enable, PlayerCSBehaviour playerBehaviour)
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldBeLocalPlayer(player)) inhibitionTimer = ConfigManager.inhibitionCooldown.Value;
+    }
+
+    public override void Update(GameObject entity)
+    {
+        base.Update(entity);
+
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (!LFCUtilities.ShouldBeLocalPlayer(player)) return;
+
+        inhibitionTimer += Time.deltaTime;
+        if (inhibitionTimer >= ConfigManager.inhibitionCooldown.Value)
         {
-            PlayerControllerB player = playerBehaviour.playerProperties;
-            if (enable)
-            {
-                inhibitionCoroutine ??= player.StartCoroutine(InhibitionCoroutine(playerBehaviour));
-                return;
-            }
+            inhibitionTimer = 0f;
+            if (!string.IsNullOrEmpty(lockedAction)) LFCPlayerActionRegistry.RemoveLock(lockedAction, $"{CursedScraps.modName}{EffectType.Name}");
 
-            if (inhibitionCoroutine != null)
-            {
-                player.StopCoroutine(inhibitionCoroutine);
-                inhibitionCoroutine = null;
-            }
+            string[] actions = ConfigManager.inhibitionActions.Value
+                .Split(',')
+                .Where(a => string.IsNullOrEmpty(lockedAction) || !a.Equals(lockedAction))
+                .ToArray();
+            lockedAction = actions[new System.Random().Next(actions.Length)];
 
-            if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
-                IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Enable();
-
-            playerBehaviour.blockedAction = null;
+            LFCPlayerActionRegistry.AddLock(lockedAction, $"{CursedScraps.modName}{EffectType.Name}");
+            if (ConfigManager.isInhibitionTip.Value)
+                HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"One of your actions has been locked by the {Constants.INHIBITION} curse.");
         }
+    }
 
-        public static IEnumerator InhibitionCoroutine(PlayerCSBehaviour playerBehaviour)
-        {
-            while (playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.INHIBITION)))
-            {
-                if (!string.IsNullOrEmpty(playerBehaviour.blockedAction))
-                    IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Enable();
+    public override void Expire(GameObject entity)
+    {
+        base.Expire(entity);
 
-                string[] actions = ConfigManager.inhibitionActions.Value.Split(',').Where(a => string.IsNullOrEmpty(playerBehaviour.blockedAction) || !a.Equals(playerBehaviour.blockedAction)).ToArray();
-                playerBehaviour.blockedAction = actions[new System.Random().Next(actions.Length)];
-                IngamePlayerSettings.Instance.playerInput.actions.FindAction(playerBehaviour.blockedAction, false).Disable();
-                if (ConfigManager.isInhibitionTip.Value) HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"One of your actions has been blocked by the {Constants.INHIBITION} curse.");
-
-                yield return new WaitForSeconds(ConfigManager.inhibitionCooldown.Value);
-            }
-            inhibitionCoroutine = null;
-        }
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldBeLocalPlayer(player) && !string.IsNullOrEmpty(lockedAction))
+            LFCPlayerActionRegistry.RemoveLock(lockedAction, $"{CursedScraps.modName}{EffectType.Name}");
     }
 }

@@ -1,21 +1,21 @@
 ﻿using CursedScraps.Managers;
-using System.Linq;
+using GameNetcodeStuff;
+using LegaFusionCore.Utilities;
+using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Blurry(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Blurry
-    {
-        public static bool IsBlurry(PlayerCSBehaviour playerBehaviour)
-        {
-            if (playerBehaviour == null) return false;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.BLURRY))) return false;
-            return true;
-        }
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.BLURRY));
 
-        public static void UpdateScreenFilters(PlayerCSBehaviour playerBehaviour)
-        {
-            if (!IsBlurry(playerBehaviour)) return;
-            HUDManager.Instance.drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
-        }
+    public override void Update(GameObject entity)
+    {
+        base.Update(entity);
+
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldBeLocalPlayer(player)) HUDManager.Instance.drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
     }
 }

@@ -1,59 +1,53 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
+using LegaFusionCore.Managers.NetworkManagers;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Fragile(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Fragile
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.FRAGILE));
+
+    public static bool PreDropObject(PlayerControllerB player, GrabbableObject grabbableObject)
+        => player.isCrouching || grabbableObject.deactivated || !DestroyHeldObject(player, grabbableObject);
+
+    public static void PlayerFall(PlayerControllerB player)
     {
-        public static bool PreDropObject(PlayerCSBehaviour playerBehaviour, GrabbableObject grabbableObject)
+        if (player.fallValueUncapped > -20f || player.isSpeedCheating) return;
+        DestroyHeldObjects(player);
+    }
+
+    public static void DestroyHeldObjects(PlayerControllerB player)
+    {
+        if (!HasCurse(player.gameObject, Constants.FRAGILE)) return;
+
+        HashSet<GrabbableObject> objectsToDestroy = [];
+        for (int i = 0; i < player.ItemSlots.Length; i++)
         {
-            if (playerBehaviour.playerProperties.isCrouching) return true;
-            if (grabbableObject.deactivated) return true;
-            if (!DestroyHeldObject(playerBehaviour, grabbableObject)) return true;
-            return false;
+            if (player.ItemSlots[i] == null) continue;
+            _ = objectsToDestroy.Add(player.ItemSlots[i]);
         }
-
-        public static void PlayerFall(PlayerControllerB player)
+        player.DropAllHeldItemsAndSync();
+        foreach (GrabbableObject grabbableObject in objectsToDestroy)
         {
-            if (player.fallValueUncapped > -20f) return;
-            if (player.isSpeedCheating) return;
-            DestroyHeldObjects(player.GetComponent<PlayerCSBehaviour>());
+            if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
+            if (ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) continue;
+
+            LFCNetworkManager.Instance.DestroyObjectEveryoneRpc(grabbableObject.GetComponent<NetworkObject>());
         }
+    }
 
-        public static void DestroyHeldObjects(PlayerCSBehaviour playerBehaviour)
-        {
-            if (playerBehaviour == null) return;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.FRAGILE))) return;
+    public static bool DestroyHeldObject(PlayerControllerB player, GrabbableObject grabbableObject)
+    {
+        if (grabbableObject == null || !HasCurse(player.gameObject, Constants.FRAGILE)) return false;
+        if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) return false;
+        if (ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) return false;
 
-            PlayerControllerB player = playerBehaviour.playerProperties;
-            HashSet<GrabbableObject> objectsToDestroy = new HashSet<GrabbableObject>();
-            for (int i = 0; i < player.ItemSlots.Length; i++)
-            {
-                if (player.ItemSlots[i] == null) continue;
-                objectsToDestroy.Add(player.ItemSlots[i]);
-            }
-            player.DropAllHeldItemsAndSync();
-            foreach (GrabbableObject grabbableObject in objectsToDestroy)
-            {
-                if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
-                if (ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) continue;
-
-                CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(grabbableObject.GetComponent<NetworkObject>());
-            }
-        }
-
-        public static bool DestroyHeldObject(PlayerCSBehaviour playerBehaviour, GrabbableObject grabbableObject)
-        {
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.FRAGILE))) return false;
-            if (grabbableObject == null) return false;
-            if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) return false;
-            if (ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) return false;
-
-            CursedScrapsNetworkManager.Instance.DestroyObjectServerRpc(grabbableObject.GetComponent<NetworkObject>());
-            return true;
-        }
+        LFCNetworkManager.Instance.DestroyObjectEveryoneRpc(grabbableObject.GetComponent<NetworkObject>());
+        return true;
     }
 }

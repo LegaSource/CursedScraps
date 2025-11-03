@@ -1,40 +1,35 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
-using System.Linq;
+using LegaFusionCore.Managers.NetworkManagers;
+using LegaFusionCore.Utilities;
 using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class OneForAll(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class OneForAll
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.ONE_FOR_ALL));
+
+    public override void Apply(GameObject entity)
     {
-        public static bool IsOneForAll(PlayerCSBehaviour playerBehaviour)
+        base.Apply(entity);
+        if (!ConfigManager.isOneForAllInfoOn.Value) return;
+
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldNotBeLocalPlayer(player))
+            HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{player.playerUsername} has been afflicted by the {EffectType.Name} curse, defend them if you can!");
+    }
+
+    public static void KillPlayer(PlayerControllerB player)
+    {
+        if (!HasCurse(player.gameObject, Constants.ONE_FOR_ALL)) return;
+
+        foreach (PlayerControllerB otherPlayer in StartOfRound.Instance.allPlayerScripts)
         {
-            if (playerBehaviour == null) return false;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.ONE_FOR_ALL))) return false;
-            return true;
-        }
-
-        public static void ApplyOneForAll(bool enable, PlayerCSBehaviour playerBehaviour)
-        {
-            if (!enable) return;
-            if (!ConfigManager.isOneForAllInfoOn.Value) return;
-            if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController) return;
-            
-            HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{playerBehaviour.playerProperties.playerUsername} has been afflicted by the {Constants.ONE_FOR_ALL} curse, defend them if you can!");
-        }
-
-        public static void KillPlayer(PlayerCSBehaviour playerBehaviour)
-        {
-            if (!IsOneForAll(playerBehaviour)) return;
-
-            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
-            {
-                if (!player.isPlayerControlled) continue;
-                if (player.isPlayerDead) continue;
-                if (player == playerBehaviour.playerProperties) continue;
-
-                CursedScrapsNetworkManager.Instance.KillPlayerServerRpc((int)player.playerClientId, Vector3.zero, true, (int)CauseOfDeath.Unknown);
-            }
+            if (!otherPlayer.isPlayerControlled || otherPlayer.isPlayerDead || otherPlayer == player) continue;
+            LFCNetworkManager.Instance.KillPlayerEveryoneRpc((int)otherPlayer.playerClientId, Vector3.zero, true, (int)CauseOfDeath.Unknown);
         }
     }
 }

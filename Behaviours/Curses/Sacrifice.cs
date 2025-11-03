@@ -1,54 +1,51 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
+using LegaFusionCore.Managers.NetworkManagers;
+using LegaFusionCore.Utilities;
 using System.Linq;
+using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Sacrifice(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Sacrifice
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.SACRIFICE));
+
+    public override void Apply(GameObject entity)
     {
-        public static bool IsSacrifice(PlayerCSBehaviour playerBehaviour)
-        {
-            if (playerBehaviour == null) return false;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.SACRIFICE))) return false;
-            return true;
-        }
+        base.Apply(entity);
+        if (!ConfigManager.isSacrificeInfoOn.Value) return;
 
-        public static PlayerControllerB GetSacrificePlayer()
-            => StartOfRound.Instance.allPlayerScripts.FirstOrDefault(p => IsSacrifice(p.GetComponent<PlayerCSBehaviour>()));
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldNotBeLocalPlayer(player))
+            HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{player.playerUsername} has been afflicted by the {Constants.SACRIFICE} curse!");
+    }
+    public static PlayerControllerB GetSacrificePlayer()
+        => StartOfRound.Instance.allPlayerScripts.FirstOrDefault(p => HasCurse(p.gameObject, Constants.SACRIFICE));
 
-        public static void ApplySacrifice(bool enable, PlayerCSBehaviour playerBehaviour)
-        {
-            if (!enable) return;
-            if (!ConfigManager.isSacrificeInfoOn.Value) return;
-            if (playerBehaviour.playerProperties == GameNetworkManager.Instance.localPlayerController) return;
-            
-            HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{playerBehaviour.playerProperties.playerUsername} has been afflicted by the {Constants.SACRIFICE} curse!");
-        }
+    public static bool DamagePlayer(PlayerControllerB player, int damage)
+    {
+        PlayerControllerB sacrificePlayer = GetSacrificePlayer();
+        if (sacrificePlayer == null || sacrificePlayer == player) return false;
 
-        public static bool KillPlayer(PlayerCSBehaviour playerBehaviour)
-        {
-            PlayerControllerB sacrificePlayer = GetSacrificePlayer();
-            if (sacrificePlayer == null) return false;
-            if (IsSacrifice(playerBehaviour)) return false;
+        LFCNetworkManager.Instance.DamagePlayerEveryoneRpc((int)sacrificePlayer.playerClientId, damage);
+        return true;
+    }
 
-            SwapPlayersPositions(playerBehaviour.playerProperties, sacrificePlayer);
-            return true;
-        }
+    public static bool KillPlayer(PlayerControllerB player)
+    {
+        PlayerControllerB sacrificePlayer = GetSacrificePlayer();
+        if (sacrificePlayer == null || sacrificePlayer == player) return false;
 
-        public static void SwapPlayersPositions(PlayerControllerB localPlayer, PlayerControllerB sacrificePlayer)
-        {
-            CursedScrapsNetworkManager.Instance.TeleportPlayerServerRpc((int)sacrificePlayer.playerClientId, localPlayer.transform.position, localPlayer.isInElevator, localPlayer.isInHangarShipRoom, localPlayer.isInsideFactory);
-            PlayerCSManager.TeleportPlayer(localPlayer, sacrificePlayer.transform.position, sacrificePlayer.isInElevator, sacrificePlayer.isInHangarShipRoom, sacrificePlayer.isInsideFactory);
-        }
+        SwapPlayers(player, sacrificePlayer);
+        return true;
+    }
 
-        public static bool DamagePlayer(PlayerCSBehaviour playerBehaviour, int damageNumber)
-        {
-            PlayerControllerB sacrificePlayer = GetSacrificePlayer();
-            if (sacrificePlayer == null) return false;
-            if (IsSacrifice(playerBehaviour)) return false;
-
-            CursedScrapsNetworkManager.Instance.DamagePlayerServerRpc((int)sacrificePlayer.playerClientId, damageNumber);
-            return true;
-        }
+    public static void SwapPlayers(PlayerControllerB player1, PlayerControllerB player2)
+    {
+        LFCNetworkManager.Instance.TeleportPlayerEveryoneRpc((int)player1.playerClientId, player2.transform.position, player2.isInElevator, player2.isInHangarShipRoom, player2.isInsideFactory);
+        LFCNetworkManager.Instance.TeleportPlayerEveryoneRpc((int)player2.playerClientId, player1.transform.position, player1.isInElevator, player1.isInHangarShipRoom, player1.isInsideFactory);
     }
 }

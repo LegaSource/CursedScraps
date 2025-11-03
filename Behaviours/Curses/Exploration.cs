@@ -1,51 +1,75 @@
 ﻿using CursedScraps.Managers;
+using GameNetcodeStuff;
+using LegaFusionCore.Behaviours.Shaders;
+using LegaFusionCore.Registries;
+using LegaFusionCore.Utilities;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Exploration(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Exploration
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.EXPLORATION));
+    private static EntranceTeleport targetedDoor;
+
+    public override void Apply(GameObject entity)
     {
-        public static void ApplyExploration(bool enable, PlayerCSBehaviour playerBehaviour)
+        base.Apply(entity);
+
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldBeLocalPlayer(player)) ChangeRandomEntranceId(!player.isInsideFactory);
+    }
+
+    public override void Update(GameObject entity)
+    {
+        base.Update(entity);
+
+        if (targetedDoor == null) return;
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (!LFCUtilities.ShouldBeLocalPlayer(player)) return;
+
+        if (Vector3.Distance(targetedDoor.transform.position, player.transform.position) > ConfigManager.explorationDistance.Value)
         {
-            if (!enable)
-            {
-                CustomPassManager.RemoveAuraFromDoor();
-                playerBehaviour.isRendered = false;
-                playerBehaviour.targetDoor = null;
-                return;
-            }
-
-            if (playerBehaviour.targetDoor != null) return;
-            ChangeRandomEntranceId(!playerBehaviour.playerProperties.isInsideFactory, playerBehaviour);
+            CustomPassManager.SetupAuraForObjects([targetedDoor.gameObject], LegaFusionCore.LegaFusionCore.wallhackShader, $"{CursedScraps.modName}{Constants.EXPLORATION}", Color.yellow);
+            return;
         }
+        CustomPassManager.RemoveAuraByTag($"{CursedScraps.modName}{Constants.EXPLORATION}");
+    }
 
-        public static bool IsExploration(PlayerCSBehaviour playerBehaviour)
+    public override void Expire(GameObject entity)
+    {
+        base.Expire(entity);
+
+        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+        if (LFCUtilities.ShouldBeLocalPlayer(player))
         {
-            if (playerBehaviour == null) return false;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.EXPLORATION))) return false;
-            return true;
+            CustomPassManager.RemoveAuraByTag($"{CursedScraps.modName}{Constants.EXPLORATION}");
+            targetedDoor = null;
         }
+    }
 
-        public static bool EntranceInteraction(PlayerCSBehaviour playerBehaviour, EntranceTeleport entranceTeleport)
+    public static bool EntranceInteraction(PlayerControllerB player, EntranceTeleport entranceTeleport)
+    {
+        if (!HasCurse(player.gameObject, Constants.EXPLORATION)) return true;
+
+        if (entranceTeleport != targetedDoor)
         {
-            if (!IsExploration(playerBehaviour)) return true;
-
-            if (entranceTeleport != playerBehaviour.targetDoor)
-            {
-                HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from using this doorway.");
-                return false;
-            }
-            ChangeRandomEntranceId(playerBehaviour.playerProperties.isInsideFactory, playerBehaviour);
-            return true;
+            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you from using this doorway.");
+            return false;
         }
+        ChangeRandomEntranceId(player.isInsideFactory);
+        return true;
+    }
 
-        public static void ChangeRandomEntranceId(bool isEntrance, PlayerCSBehaviour playerBehaviour)
-        {
-            List<EntranceTeleport> entrances = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>()
-                .Where(e => e.isEntranceToBuilding == isEntrance)
-                .ToList();
-            playerBehaviour.targetDoor = entrances[new System.Random().Next(entrances.Count)];
-        }
+    public static void ChangeRandomEntranceId(bool isEntrance)
+    {
+        List<EntranceTeleport> entrances = LFCSpawnRegistry.GetAllAs<EntranceTeleport>()
+            .Where(e => e.isEntranceToBuilding == isEntrance)
+            .ToList();
+        targetedDoor = entrances[new System.Random().Next(entrances.Count)];
     }
 }

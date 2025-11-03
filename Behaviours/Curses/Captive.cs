@@ -1,17 +1,9 @@
-﻿using System.Linq;
+﻿using static CursedScraps.Registries.CSCurseRegistry;
 
-namespace CursedScraps.Behaviours.Curses
+namespace CursedScraps.Behaviours.Curses;
+
+public class Captive(int playerWhoHit, int duration, System.Action onApply, System.Action onExpire, System.Action onUpdate)
+    : CurseEffect(Type, playerWhoHit, duration, onApply, onExpire, onUpdate)
 {
-    public class Captive
-    {
-        public static bool IsCaptive(PlayerCSBehaviour playerBehaviour, bool isMessage = false)
-        {
-            if (playerBehaviour == null) return false;
-            if (!playerBehaviour.activeCurses.Any(c => c.CurseName.Equals(Constants.CAPTIVE))) return false;
-
-            if (!isMessage) return true;
-            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to do this action.");
-            return true;
-        }
-    }
+    private static readonly CurseEffectType Type = curseEffectTypes.Find(t => t.Name.Equals(Constants.CAPTIVE));
 }
