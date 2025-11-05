@@ -3,7 +3,7 @@ using HarmonyLib;
 
 namespace CursedScraps.Patches;
 
-internal class BeltBagItemPatch
+public class BeltBagItemPatch
 {
     [HarmonyPatch(typeof(BeltBagItem), nameof(BeltBagItem.PutObjectInBagLocalClient))]
     [HarmonyPostfix]

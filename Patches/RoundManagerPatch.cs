@@ -9,7 +9,7 @@ using static CursedScraps.Registries.CSCurseRegistry;
 
 namespace CursedScraps.Patches;
 
-internal class RoundManagerPatch
+public class RoundManagerPatch
 {
     [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.waitForScrapToSpawnToSync))]
     [HarmonyPostfix]
@@ -26,31 +26,31 @@ internal class RoundManagerPatch
             string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
             if (new System.Random().Next(1, 100) > GetValueFromPair(ConfigManager.globalChance.Value, planetName)) continue;
 
-            string curseName = GetRandomCurse(planetName);
-            if (string.IsNullOrEmpty(curseName)) continue;
+            CurseEffectType curseType = GetRandomCurse(planetName);
+            if (curseType != null) continue;
 
             NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
             if (networkObject == null || !networkObject.IsSpawned) continue;
 
-            CursedScrapsNetworkManager.Instance.ApplyObjectCurseEveryoneRpc(networkObject, curseName);
+            CursedScrapsNetworkManager.Instance.ApplyObjectCurseEveryoneRpc(networkObject, curseType.Name);
         }
     }
 
-    public static string GetRandomCurse(string planetName)
+    public static CurseEffectType GetRandomCurse(string planetName)
     {
-        List<string> eligibleCurses = GetEligibleCurses(planetName);
+        List<CurseEffectType> eligibleCurses = GetEligibleCurses(planetName);
         // Sélectionner un effet aléatoire parmi les effets éligibles
         return eligibleCurses.Count > 0 ? eligibleCurses[new System.Random().Next(eligibleCurses.Count)] : null;
     }
 
-    public static List<string> GetEligibleCurses(string planetName)
+    public static List<CurseEffectType> GetEligibleCurses(string planetName)
     {
         // Ajout des malédictions éligibles en fonction de leur valeur d'importance
-        List<string> eligibleCurses = [];
+        List<CurseEffectType> eligibleCurses = [];
         foreach (CurseEffectType curseType in curseEffectTypes)
         {
             for (int i = 0; i < GetValueFromPair(curseType.Weight, planetName); i++)
-                eligibleCurses.Add(curseType.Name);
+                eligibleCurses.Add(curseType);
         }
         return eligibleCurses;
     }

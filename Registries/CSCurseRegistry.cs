@@ -197,16 +197,17 @@ public class CSCurseRegistry : MonoBehaviour
         {
             curse.Expire(entity);
             _ = curses.Remove(curseType);
+            if (curses.Count == 0) _ = activeCurses.Remove(entity);
             HUDManagerPatch.RefreshCursesText(LFCUtilities.GetSafeComponent<PlayerControllerB>(entity));
         }
     }
 
     public static List<CurseEffectType> GetCurses(GameObject entity) => !activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses) ? ([]) : [.. curses.Keys];
-    public static bool HasCurse(GameObject entity) => activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> _);
+    public static bool HasCurse(GameObject entity) => activeCurses.ContainsKey(entity);
     public static bool HasCurse(GameObject entity, string name)
         => activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses)
-        && curseEffectTypes.FirstOrDefault(t => t.Name == name) is { } type
-        && curses.ContainsKey(type);
+            && curseEffectTypes.FirstOrDefault(t => t.Name == name) is { } type
+            && curses.ContainsKey(type);
 
     public static void ClearCurses(GameObject entity)
     {

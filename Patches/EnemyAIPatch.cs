@@ -3,7 +3,7 @@ using HarmonyLib;
 
 namespace CursedScraps.Patches;
 
-internal class EnemyAIPatch
+public class EnemyAIPatch
 {
     [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.SetClientCalculatingAI))]
     [HarmonyPostfix]

@@ -4,7 +4,7 @@ using Unity.Netcode;
 
 namespace CursedScraps.Patches;
 
-internal class BeltBagInventoryUIPatch
+public class BeltBagInventoryUIPatch
 {
     [HarmonyPatch(typeof(BeltBagInventoryUI), nameof(BeltBagInventoryUI.RemoveItemFromUI))]
     [HarmonyPrefix]

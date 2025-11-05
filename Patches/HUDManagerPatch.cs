@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace CursedScraps.Patches;
 
-internal class HUDManagerPatch
+public class HUDManagerPatch
 {
     public static TextMeshProUGUI cursesText;
 

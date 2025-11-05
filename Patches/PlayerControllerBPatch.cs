@@ -6,7 +6,7 @@ using LegaFusionCore.Utilities;
 
 namespace CursedScraps.Patches;
 
-internal class PlayerControllerBPatch
+public class PlayerControllerBPatch
 {
     [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.GrabObjectClientRpc))]
     [HarmonyPostfix]

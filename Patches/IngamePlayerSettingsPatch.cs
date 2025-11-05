@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace CursedScraps.Patches;
 
-internal class IngamePlayerSettingsPatch
+public class IngamePlayerSettingsPatch
 {
     [HarmonyPatch(typeof(IngamePlayerSettings), nameof(IngamePlayerSettings.DiscardChangedSettings))]
     [HarmonyPrefix]

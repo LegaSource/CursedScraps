@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CursedScraps.Patches;
 
-internal class StartOfRoundPatch
+public class StartOfRoundPatch
 {
     [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Start))]
     [HarmonyBefore(["evaisa.lethallib"])]
