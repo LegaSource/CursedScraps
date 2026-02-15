@@ -41,11 +41,12 @@ public class Errant(int playerWhoHit, int duration, System.Action onApply, Syste
 
     public static void TeleportPlayer(PlayerControllerB player)
     {
-        if (player.isInHangarShipRoom) return;
-
-        canBeTeleported = false;
-        Vector3 position = RoundManager.Instance.insideAINodes[Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
-        position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
-        LFCNetworkManager.Instance.TeleportPlayerEveryoneRpc((int)player.playerClientId, position, false, false, true);
+        if (!player.isInHangarShipRoom)
+        {
+            canBeTeleported = false;
+            Vector3 position = RoundManager.Instance.insideAINodes[Random.Range(0, RoundManager.Instance.insideAINodes.Length)].transform.position;
+            position = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(position);
+            LFCNetworkManager.Instance.TeleportPlayerEveryoneRpc((int)player.playerClientId, position, false, false, true);
+        }
     }
 }

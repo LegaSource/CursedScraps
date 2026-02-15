@@ -17,13 +17,14 @@ public class Paralysis(int playerWhoHit, int duration, System.Action onApply, Sy
 
     public static void ScanPerformed(PlayerControllerB player, ScanNodeProperties scanNodeProperties)
     {
-        if (!HasCurse(player.gameObject, Constants.PARALYSIS) || scanNodeProperties.nodeType != 1) return;
-
-        foreach (string actionName in actionNames)
+        if (HasCurse(player.gameObject, Constants.PARALYSIS) && scanNodeProperties.nodeType == 1)
         {
-            isParalyzed = true;
-            player.JumpToFearLevel(0.6f);
-            LFCPlayerActionRegistry.AddLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
+            foreach (string actionName in actionNames)
+            {
+                isParalyzed = true;
+                player.JumpToFearLevel(0.6f);
+                LFCPlayerActionRegistry.AddLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
+            }
         }
     }
 
@@ -51,9 +52,11 @@ public class Paralysis(int playerWhoHit, int duration, System.Action onApply, Sy
         if (isParalyzed)
         {
             PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-            if (!LFCUtilities.ShouldBeLocalPlayer(player)) return;
-
-            foreach (string actionName in actionNames) LFCPlayerActionRegistry.RemoveLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
+            if (LFCUtilities.ShouldBeLocalPlayer(player))
+            {
+                foreach (string actionName in actionNames)
+                    LFCPlayerActionRegistry.RemoveLock(actionName, $"{CursedScraps.modName}{Constants.PARALYSIS}");
+            }
         }
     }
 }

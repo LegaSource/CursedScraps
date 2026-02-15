@@ -16,11 +16,13 @@ public class Sacrifice(int playerWhoHit, int duration, System.Action onApply, Sy
     public override void Apply(GameObject entity)
     {
         base.Apply(entity);
-        if (!ConfigManager.isSacrificeInfoOn.Value) return;
 
-        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-        if (LFCUtilities.ShouldNotBeLocalPlayer(player))
-            HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{player.playerUsername} has been afflicted by the {Constants.SACRIFICE} curse!");
+        if (ConfigManager.isSacrificeInfoOn.Value)
+        {
+            PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+            if (LFCUtilities.ShouldNotBeLocalPlayer(player))
+                HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{player.playerUsername} has been afflicted by the {Constants.SACRIFICE} curse!");
+        }
     }
     public static PlayerControllerB GetSacrificePlayer()
         => StartOfRound.Instance.allPlayerScripts.FirstOrDefault(p => HasCurse(p.gameObject, Constants.SACRIFICE));
@@ -28,19 +30,23 @@ public class Sacrifice(int playerWhoHit, int duration, System.Action onApply, Sy
     public static bool DamagePlayer(PlayerControllerB player, int damage)
     {
         PlayerControllerB sacrificePlayer = GetSacrificePlayer();
-        if (sacrificePlayer == null || sacrificePlayer == player) return false;
-
-        LFCNetworkManager.Instance.DamagePlayerEveryoneRpc((int)sacrificePlayer.playerClientId, damage);
-        return true;
+        if (sacrificePlayer != null && sacrificePlayer != player)
+        {
+            LFCNetworkManager.Instance.DamagePlayerEveryoneRpc((int)sacrificePlayer.playerClientId, damage);
+            return true;
+        }
+        return false;
     }
 
     public static bool KillPlayer(PlayerControllerB player)
     {
         PlayerControllerB sacrificePlayer = GetSacrificePlayer();
-        if (sacrificePlayer == null || sacrificePlayer == player) return false;
-
-        SwapPlayers(player, sacrificePlayer);
-        return true;
+        if (sacrificePlayer != null && sacrificePlayer != player)
+        {
+            SwapPlayers(player, sacrificePlayer);
+            return true;
+        }
+        return false;
     }
 
     public static void SwapPlayers(PlayerControllerB player1, PlayerControllerB player2)

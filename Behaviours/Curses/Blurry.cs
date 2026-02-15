@@ -16,6 +16,7 @@ public class Blurry(int playerWhoHit, int duration, System.Action onApply, Syste
         base.Update(entity);
 
         PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-        if (LFCUtilities.ShouldBeLocalPlayer(player)) HUDManager.Instance.drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
+        if (LFCUtilities.ShouldBeLocalPlayer(player))
+            HUDManager.Instance.drunknessFilter.weight = ConfigManager.blurryIntensity.Value;
     }
 }

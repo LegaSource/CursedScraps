@@ -30,11 +30,13 @@ public class ObjectCSManager
             HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "A curse prevents you to do this action.");
             return false;
         }
-        if (!Fragile.PreDropObject(__instance, grabbableObject)) return false;
-        Errant.PreDropTeleport(__instance, grabbableObject);
-        CursedScrapsNetworkManager.Instance.ScaleObjectEveryoneRpc(grabbableObject.GetComponent<NetworkObject>(), (int)__instance.playerClientId, true);
-
-        return true;
+        if (Fragile.PreDropObject(__instance, grabbableObject))
+        {
+            Errant.PreDropTeleport(__instance, grabbableObject);
+            CursedScrapsNetworkManager.Instance.ScaleObjectEveryoneRpc(grabbableObject.GetComponent<NetworkObject>(), (int)__instance.playerClientId, true);
+            return true;
+        }
+        return false;
     }
 
     public static void PostDropObject(PlayerControllerB __instance) => Errant.PostDropTeleport(__instance);

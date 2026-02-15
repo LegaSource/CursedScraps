@@ -11,14 +11,15 @@ public class HolyWater : PhysicsProp
     {
         base.ItemActivate(used, buttonDown);
 
-        if (!buttonDown || playerHeldBy == null) return;
-
-        if (CSCurseRegistry.HasCurse(playerHeldBy.gameObject))
+        if (buttonDown && playerHeldBy != null)
         {
-            CursedScrapsNetworkManager.Instance.ClearPlayerCursesEveryoneRpc((int)playerHeldBy.playerClientId);
-            LFCNetworkManager.Instance.DestroyObjectEveryoneRpc(GetComponent<NetworkObject>());
-            return;
+            if (CSCurseRegistry.HasCurse(playerHeldBy.gameObject))
+            {
+                CursedScrapsNetworkManager.Instance.ClearPlayerCursesEveryoneRpc((int)playerHeldBy.playerClientId);
+                LFCNetworkManager.Instance.DestroyObjectEveryoneRpc(GetComponent<NetworkObject>());
+                return;
+            }
+            HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You have no active curse.");
         }
-        HUDManager.Instance.DisplayTip(Constants.IMPOSSIBLE_ACTION, "You have no active curse.");
     }
 }

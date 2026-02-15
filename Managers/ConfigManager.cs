@@ -8,6 +8,7 @@ public class ConfigManager
     // GLOBAL
     public static ConfigEntry<string> globalChance;
     public static ConfigEntry<bool> globalPrevent;
+    public static ConfigEntry<bool> isCurseShader;
     public static ConfigEntry<string> scrapExclusions;
     // HUD
     public static ConfigEntry<bool> isCurseInfoOn;
@@ -106,6 +107,7 @@ public class ConfigManager
         // GLOBAL
         globalChance = CursedScraps.configFile.Bind(Constants.GLOBAL, "Chance", "default:15", "Overall chance of scrap appearing.\nThis value does not replace the chance of appearance for each curse; the latter are considered after the overall chance to determine which curse is chosen.\nYou can adjust this value according to the moon by adding its name along with its value (moon:value). Each key/value pair should be separated by a comma.");
         globalPrevent = CursedScraps.configFile.Bind(Constants.GLOBAL, "Preventing settings changes", true, "Set to false to allow players to change their settings when a curse modifying controls is active.\nThis configuration is mainly there in case of unforeseen bugs or potential incompatibility.");
+        isCurseShader = CursedScraps.configFile.Bind(Constants.GLOBAL, "Enable curse shader", true, "Enable shader on the player when cursed.");
         scrapExclusions = CursedScraps.configFile.Bind(Constants.GLOBAL, "Exclusion list", "Key", "List of scraps that will not be cursed.\nYou can add scraps by separating them with a comma.");
         // HUD
         isCurseInfoOn = CursedScraps.configFile.Bind(Constants.HUD, "Curse info", true, "Does the information popup appear when a player is cursed?");

@@ -27,7 +27,7 @@ public class RoundManagerPatch
             if (new System.Random().Next(1, 100) > GetValueFromPair(ConfigManager.globalChance.Value, planetName)) continue;
 
             CurseEffectType curseType = GetRandomCurse(planetName);
-            if (curseType != null) continue;
+            if (curseType == null) continue;
 
             NetworkObject networkObject = grabbableObject.GetComponent<NetworkObject>();
             if (networkObject == null || !networkObject.IsSpawned) continue;

@@ -61,10 +61,12 @@ public class HUDManagerPatch
     private static void EntranceInteraction(ref bool __result)
     {
         PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-        if (!__result || !CSCurseRegistry.HasCurse(player.gameObject)) return;
-
-        EntranceTeleport entranceTeleport = player.hoveringOverTrigger?.gameObject.GetComponent<EntranceTeleport>();
-        if (entranceTeleport != null && !Exploration.EntranceInteraction(player, entranceTeleport)) __result = false;
+        if (__result && CSCurseRegistry.HasCurse(player.gameObject))
+        {
+            EntranceTeleport entranceTeleport = player.hoveringOverTrigger?.gameObject.GetComponent<EntranceTeleport>();
+            if (entranceTeleport != null && !Exploration.EntranceInteraction(player, entranceTeleport))
+                __result = false;
+        }
     }
 
     public static void RefreshCursesText(PlayerControllerB player)

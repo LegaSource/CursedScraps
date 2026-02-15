@@ -20,7 +20,8 @@ public class Inhibition(int playerWhoHit, int duration, System.Action onApply, S
         base.Apply(entity);
 
         PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-        if (LFCUtilities.ShouldBeLocalPlayer(player)) inhibitionTimer = ConfigManager.inhibitionCooldown.Value;
+        if (LFCUtilities.ShouldBeLocalPlayer(player))
+            inhibitionTimer = ConfigManager.inhibitionCooldown.Value;
     }
 
     public override void Update(GameObject entity)

@@ -62,13 +62,16 @@ public class CSCurseRegistry : MonoBehaviour
         {
             OnApply?.Invoke();
 
-            PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-            if (LFCUtilities.ShouldNotBeLocalPlayer(player))
+            if (ConfigManager.isCurseShader.Value)
             {
-                if (HasCurse(entity, Constants.DIMINUTIVE))
-                    CustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
-                else
-                    CustomPassManager.SetupAuraForObjects([entity.gameObject], CursedScraps.cursedShader, $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+                PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+                if (LFCUtilities.ShouldNotBeLocalPlayer(player))
+                {
+                    if (HasCurse(entity, Constants.DIMINUTIVE))
+                        CustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+                    else
+                        CustomPassManager.SetupAuraForObjects([entity.gameObject], CursedScraps.cursedShader, $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+                }
             }
         }
 
@@ -77,7 +80,8 @@ public class CSCurseRegistry : MonoBehaviour
         public virtual void Expire(GameObject entity)
         {
             OnExpire?.Invoke();
-            CustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+            if (ConfigManager.isCurseShader.Value)
+                CustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
         }
 
         public bool IsExpired() => Time.time >= EndTime;
@@ -211,10 +215,11 @@ public class CSCurseRegistry : MonoBehaviour
 
     public static void ClearCurses(GameObject entity)
     {
-        if (!activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses)) return;
-
-        curses.Keys.ToList().ForEach(e => RemoveCurse(entity, e));
-        _ = activeCurses.Remove(entity);
+        if (activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses))
+        {
+            curses.Keys.ToList().ForEach(e => RemoveCurse(entity, e));
+            _ = activeCurses.Remove(entity);
+        }
     }
 
     public static void ClearCurses() => activeCurses.Keys.ToList().ForEach(ClearCurses);

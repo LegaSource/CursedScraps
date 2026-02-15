@@ -27,7 +27,6 @@ public class Mute(int playerWhoHit, int duration, System.Action onApply, System.
         }
 
         IngamePlayerSettings.Instance.SetMicrophoneEnabled();
-        CursedScraps.mls.LogError("Apply Mute");
     }
 
     public override void Expire(GameObject entity)

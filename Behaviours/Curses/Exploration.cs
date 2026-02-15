@@ -21,7 +21,8 @@ public class Exploration(int playerWhoHit, int duration, System.Action onApply, 
         base.Apply(entity);
 
         PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-        if (LFCUtilities.ShouldBeLocalPlayer(player)) ChangeRandomEntranceId(!player.isInsideFactory);
+        if (LFCUtilities.ShouldBeLocalPlayer(player))
+            ChangeRandomEntranceId(!player.isInsideFactory);
     }
 
     public override void Update(GameObject entity)

@@ -3,8 +3,8 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using CursedScraps.Behaviours.Items;
 using CursedScraps.Managers;
+using CursedScraps.ModsCompat;
 using CursedScraps.Patches;
-using CursedScraps.Patches.ModsPatches;
 using HarmonyLib;
 using LethalLib.Modules;
 using System;
@@ -20,7 +20,7 @@ public class CursedScraps : BaseUnityPlugin
 {
     internal const string modGUID = "Lega.CursedScraps";
     internal const string modName = "Cursed Scraps";
-    internal const string modVersion = "3.0.1";
+    internal const string modVersion = "3.0.3";
 
     private readonly Harmony harmony = new Harmony(modGUID);
     private static readonly AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));
@@ -52,7 +52,9 @@ public class CursedScraps : BaseUnityPlugin
         harmony.PatchAll(typeof(HUDManagerPatch));
         harmony.PatchAll(typeof(PlayerControllerBPatch));
         harmony.PatchAll(typeof(EnemyAIPatch));
-        PatchOtherMods(harmony);
+
+        BagConfigSoftCompat.Patch(harmony);
+        ToggleMuteSoftCompat.Patch(harmony);
     }
 
     public static void LoadManager()
@@ -83,32 +85,4 @@ public class CursedScraps : BaseUnityPlugin
     }
 
     public static void LoadShaders() => cursedShader = bundle.LoadAsset<Material>("Assets/Shaders/CursedMaterial.mat");
-
-    public static void PatchOtherMods(Harmony harmony)
-    {
-        BagConfigPatch(harmony);
-        ToggleMutePatch(harmony);
-    }
-
-    public static void BagConfigPatch(Harmony harmony)
-    {
-        Type beltBagPatchClass = Type.GetType("BagConfig.Patches.BeltBagPatch, BagConfig");
-        if (beltBagPatchClass == null) return;
-
-        _ = harmony.Patch(
-            AccessTools.Method(beltBagPatchClass, "EmptyBagCoroutine"),
-            prefix: new HarmonyMethod(typeof(BagConfigPatch).GetMethod("EmptyBag"))
-        );
-    }
-
-    public static void ToggleMutePatch(Harmony harmony)
-    {
-        Type toggleMutePatchClass = Type.GetType("ToggleMute.ToggleMuteManager, ToggleMute");
-        if (toggleMutePatchClass == null) return;
-
-        _ = harmony.Patch(
-            AccessTools.Method(toggleMutePatchClass, "OnToggleMuteKeyPressed"),
-            prefix: new HarmonyMethod(typeof(ToggleMutePatch).GetMethod("ToggleMute"))
-        );
-    }
 }

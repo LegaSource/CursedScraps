@@ -1,4 +1,5 @@
 ﻿using CursedScraps.Managers;
+using CursedScraps.Registries;
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,6 +20,10 @@ public class StartOfRoundPatch
             CursedScraps.mls.LogInfo("Spawning CursedScrapsNetworkManager");
         }
     }
+
+    [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.ShipLeave))]
+    [HarmonyPostfix]
+    public static void EndRound() => CSCurseRegistry.ClearCurses();
 
     [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.OnDisable))]
     [HarmonyPostfix]

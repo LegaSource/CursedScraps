@@ -15,21 +15,23 @@ public class OneForAll(int playerWhoHit, int duration, System.Action onApply, Sy
     public override void Apply(GameObject entity)
     {
         base.Apply(entity);
-        if (!ConfigManager.isOneForAllInfoOn.Value) return;
-
-        PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
-        if (LFCUtilities.ShouldNotBeLocalPlayer(player))
-            HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{player.playerUsername} has been afflicted by the {EffectType.Name} curse, defend them if you can!");
+        if (ConfigManager.isOneForAllInfoOn.Value)
+        {
+            PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
+            if (LFCUtilities.ShouldNotBeLocalPlayer(player))
+                HUDManager.Instance.DisplayTip(Constants.IMPORTANT_INFORMATION, $"{player.playerUsername} has been afflicted by the {EffectType.Name} curse, defend them if you can!");
+        }
     }
 
     public static void KillPlayer(PlayerControllerB player)
     {
-        if (!HasCurse(player.gameObject, Constants.ONE_FOR_ALL)) return;
-
-        foreach (PlayerControllerB otherPlayer in StartOfRound.Instance.allPlayerScripts)
+        if (HasCurse(player.gameObject, Constants.ONE_FOR_ALL))
         {
-            if (!otherPlayer.isPlayerControlled || otherPlayer.isPlayerDead || otherPlayer == player) continue;
-            LFCNetworkManager.Instance.KillPlayerEveryoneRpc((int)otherPlayer.playerClientId, Vector3.zero, true, (int)CauseOfDeath.Unknown);
+            foreach (PlayerControllerB otherPlayer in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (!otherPlayer.isPlayerControlled || otherPlayer.isPlayerDead || otherPlayer == player) continue;
+                LFCNetworkManager.Instance.KillPlayerEveryoneRpc((int)otherPlayer.playerClientId, Vector3.zero, true, (int)CauseOfDeath.Unknown);
+            }
         }
     }
 }
