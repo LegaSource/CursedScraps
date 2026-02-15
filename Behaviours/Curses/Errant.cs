@@ -1,6 +1,7 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
 using LegaFusionCore.Managers.NetworkManagers;
+using LegaFusionCore.Utilities;
 using UnityEngine;
 using static CursedScraps.Registries.CSCurseRegistry;
 
@@ -16,7 +17,7 @@ public class Errant(int playerWhoHit, int duration, System.Action onApply, Syste
     {
         if (!HasCurse(player.gameObject, Constants.ERRANT)) return false;
         if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) return false;
-        if (ConfigManager.errantExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) return false;
+        if (LFCUtilities.HasNameFromList(grabbableObject.itemProperties.itemName, ConfigManager.errantExclusions.Value)) return false;
         // Si le joueur possède la malédiction captive, l'objet ne peut pas être drop, on ne fait donc pas la tp
         return !checkCaptive || !HasCurse(player.gameObject, Constants.CAPTIVE);
     }

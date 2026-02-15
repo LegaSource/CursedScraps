@@ -11,10 +11,10 @@ public class BeltBagInventoryUIPatch
     private static bool PreDropObject(ref BeltBagInventoryUI __instance, int slot)
     {
         if (__instance.currentBeltBag == null || slot == -1) return true;
+        if (__instance.currentBeltBag.objectsInBag == null || slot >= __instance.currentBeltBag.objectsInBag.Count) return true;
 
         GrabbableObject grabbableObject = __instance.currentBeltBag.objectsInBag[slot];
-        if (__instance.currentBeltBag.objectsInBag.Count > slot
-            && grabbableObject != null
+        if (grabbableObject != null
             && !__instance.currentBeltBag.tryingAddToBag
             && !ObjectCSManager.PreDropObject(__instance.currentBeltBag.playerHeldBy, grabbableObject))
         {

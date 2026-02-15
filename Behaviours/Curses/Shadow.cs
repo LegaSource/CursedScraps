@@ -1,5 +1,6 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
+using LegaFusionCore.Utilities;
 using static CursedScraps.Registries.CSCurseRegistry;
 
 namespace CursedScraps.Behaviours.Curses;
@@ -11,18 +12,19 @@ public class Shadow(int playerWhoHit, int duration, System.Action onApply, Syste
 
     public static void ApplyShadow(EnemyAI enemy)
     {
-        if (ConfigManager.shadowExclusions.Value.Contains(enemy.enemyType.enemyName)) return;
-
-        PlayerControllerB player = GameNetworkManager.Instance?.localPlayerController;
-        if (player != null && HasCurse(player.gameObject, Constants.SHADOW))
+        if (!LFCUtilities.HasNameFromList(enemy.enemyType.enemyName, ConfigManager.shadowExclusions.Value))
         {
-            ScanNodeProperties scanNode = enemy.gameObject.GetComponentInChildren<ScanNodeProperties>();
-            if (scanNode != null && HUDManager.Instance != null)
+            PlayerControllerB player = GameNetworkManager.Instance?.localPlayerController;
+            if (player != null && HasCurse(player.gameObject, Constants.SHADOW))
             {
-                enemy.EnableEnemyMesh(HUDManager.Instance.scanNodes.ContainsValue(scanNode));
-                return;
+                ScanNodeProperties scanNode = enemy.gameObject.GetComponentInChildren<ScanNodeProperties>();
+                if (scanNode != null && HUDManager.Instance != null)
+                {
+                    enemy.EnableEnemyMesh(HUDManager.Instance.scanNodes.ContainsValue(scanNode));
+                    return;
+                }
             }
+            enemy.EnableEnemyMesh(true);
         }
-        enemy.EnableEnemyMesh(true);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CursedScraps.Managers;
 using HarmonyLib;
 using LegaFusionCore.Registries;
+using LegaFusionCore.Utilities;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ public class RoundManagerPatch
         foreach (GrabbableObject grabbableObject in LFCSpawnRegistry.GetAllAs<GrabbableObject>())
         {
             if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
-            if (!(string.IsNullOrEmpty(ConfigManager.scrapExclusions.Value) || !ConfigManager.scrapExclusions.Value.Contains(grabbableObject.itemProperties.itemName))) continue;
+            if (LFCUtilities.HasNameFromList(grabbableObject.itemProperties.itemName, ConfigManager.scrapExclusions.Value)) continue;
             if (!grabbableObject.isInFactory || grabbableObject.isInShipRoom || grabbableObject.scrapValue <= 0) continue;
 
             string planetName = new(StartOfRound.Instance.currentLevel.PlanetName.SkipWhile((char c) => !char.IsLetter(c)).ToArray());
@@ -57,18 +58,24 @@ public class RoundManagerPatch
 
     public static int GetValueFromPair(string valueByMoons, string planetName)
     {
-        // Tableau contenant tous les ensembles clé/valeur pour les noms de planètes/valeurs d'importances
-        string[] valuePairs = valueByMoons.Split(',');
-        int defaultValue = 0;
+        if (string.IsNullOrWhiteSpace(valueByMoons)) return 0;
 
-        foreach (string valuePair in valuePairs)
+        int defaultValue = 0;
+        // Ensembles clé/valeur pour les noms de planètes/valeurs d'importances
+        foreach (string valuePair in valueByMoons.Split(',', System.StringSplitOptions.RemoveEmptyEntries))
         {
             // Ensemble clé/valeur pour nom de la planète/valeur d'importance
             string[] valueTab = valuePair.Split(':');
-            if (valueTab.Length == 2 && valueTab[0] == planetName)
-                return int.Parse(valueTab[1]); // Retourne la valeur d'importance si la clé est trouvée
-            else if (valueTab.Length == 2 && valueTab[0] == "default")
-                defaultValue = int.Parse(valueTab[1]);
+            if (valueTab.Length != 2) continue;
+
+            string key = valueTab[0].Trim();
+            string weight = valueTab[1].Trim();
+
+            if (int.TryParse(weight, out int parsed))
+            {
+                if (key == "default") defaultValue = parsed;
+                else if (key == planetName) return parsed;
+            }
         }
         return defaultValue;
     }

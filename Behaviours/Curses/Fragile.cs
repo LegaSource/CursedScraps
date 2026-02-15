@@ -1,6 +1,7 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
 using LegaFusionCore.Managers.NetworkManagers;
+using LegaFusionCore.Utilities;
 using System.Collections.Generic;
 using Unity.Netcode;
 using static CursedScraps.Registries.CSCurseRegistry;
@@ -35,7 +36,7 @@ public class Fragile(int playerWhoHit, int duration, System.Action onApply, Syst
         foreach (GrabbableObject grabbableObject in objectsToDestroy)
         {
             if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;
-            if (ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) continue;
+            if (LFCUtilities.HasNameFromList(grabbableObject.itemProperties.itemName, ConfigManager.fragileExclusions.Value)) continue;
 
             LFCNetworkManager.Instance.DestroyObjectEveryoneRpc(grabbableObject.GetComponent<NetworkObject>());
         }
@@ -45,7 +46,7 @@ public class Fragile(int playerWhoHit, int duration, System.Action onApply, Syst
     {
         if (grabbableObject == null || !HasCurse(player.gameObject, Constants.FRAGILE)) return false;
         if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) return false;
-        if (ConfigManager.fragileExclusions.Value.Contains(grabbableObject.itemProperties.itemName)) return false;
+        if (LFCUtilities.HasNameFromList(grabbableObject.itemProperties.itemName, ConfigManager.fragileExclusions.Value)) return false;
 
         LFCNetworkManager.Instance.DestroyObjectEveryoneRpc(grabbableObject.GetComponent<NetworkObject>());
         return true;
