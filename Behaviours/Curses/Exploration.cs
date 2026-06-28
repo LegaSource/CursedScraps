@@ -1,6 +1,6 @@
 ﻿using CursedScraps.Managers;
 using GameNetcodeStuff;
-using LegaFusionCore.Behaviours.Shaders;
+using LegaFusionCore.Managers;
 using LegaFusionCore.Registries;
 using LegaFusionCore.Utilities;
 using System.Collections.Generic;
@@ -35,10 +35,10 @@ public class Exploration(int playerWhoHit, int duration, System.Action onApply, 
 
         if (Vector3.Distance(targetedDoor.transform.position, player.transform.position) > ConfigManager.explorationDistance.Value)
         {
-            CustomPassManager.SetupAuraForObjects([targetedDoor.gameObject], LegaFusionCore.LegaFusionCore.wallhackShader, $"{CursedScraps.modName}{Constants.EXPLORATION}", Color.yellow);
+            LFCCustomPassManager.SetupAuraForObjects([targetedDoor.gameObject], LegaFusionCore.LegaFusionCore.wallhackShader, $"{CursedScraps.modName}{Constants.EXPLORATION}", Color.yellow);
             return;
         }
-        CustomPassManager.RemoveAuraByTag($"{CursedScraps.modName}{Constants.EXPLORATION}");
+        LFCCustomPassManager.RemoveAuraByTag($"{CursedScraps.modName}{Constants.EXPLORATION}");
     }
 
     public override void Expire(GameObject entity)
@@ -48,7 +48,7 @@ public class Exploration(int playerWhoHit, int duration, System.Action onApply, 
         PlayerControllerB player = LFCUtilities.GetSafeComponent<PlayerControllerB>(entity);
         if (LFCUtilities.ShouldBeLocalPlayer(player))
         {
-            CustomPassManager.RemoveAuraByTag($"{CursedScraps.modName}{Constants.EXPLORATION}");
+            LFCCustomPassManager.RemoveAuraByTag($"{CursedScraps.modName}{Constants.EXPLORATION}");
             targetedDoor = null;
         }
     }

@@ -20,7 +20,7 @@ public class CursedScraps : BaseUnityPlugin
 {
     internal const string modGUID = "Lega.CursedScraps";
     internal const string modName = "Cursed Scraps";
-    internal const string modVersion = "3.0.3";
+    internal const string modVersion = "3.0.5";
 
     private readonly Harmony harmony = new Harmony(modGUID);
     private static readonly AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "cursedscraps"));

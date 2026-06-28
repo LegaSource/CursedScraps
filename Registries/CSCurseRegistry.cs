@@ -2,7 +2,7 @@
 using CursedScraps.Managers;
 using CursedScraps.Patches;
 using GameNetcodeStuff;
-using LegaFusionCore.Behaviours.Shaders;
+using LegaFusionCore.Managers;
 using LegaFusionCore.Utilities;
 using System;
 using System.Collections.Generic;
@@ -68,9 +68,9 @@ public class CSCurseRegistry : MonoBehaviour
                 if (LFCUtilities.ShouldNotBeLocalPlayer(player))
                 {
                     if (HasCurse(entity, Constants.DIMINUTIVE))
-                        CustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+                        LFCCustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
                     else
-                        CustomPassManager.SetupAuraForObjects([entity.gameObject], CursedScraps.cursedShader, $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+                        LFCCustomPassManager.SetupAuraForObjects([entity.gameObject], CursedScraps.cursedShader, $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
                 }
             }
         }
@@ -81,7 +81,7 @@ public class CSCurseRegistry : MonoBehaviour
         {
             OnExpire?.Invoke();
             if (ConfigManager.isCurseShader.Value)
-                CustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
+                LFCCustomPassManager.RemoveAuraFromObjects([entity.gameObject], $"{CursedScraps.modName}{CursedScraps.cursedShader.name}");
         }
 
         public bool IsExpired() => Time.time >= EndTime;
@@ -206,7 +206,7 @@ public class CSCurseRegistry : MonoBehaviour
         }
     }
 
-    public static List<CurseEffectType> GetCurses(GameObject entity) => !activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses) ? ([]) : [.. curses.Keys];
+    public static List<CurseEffectType> GetCurses(GameObject entity) => !activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses) ? [] : [.. curses.Keys];
     public static bool HasCurse(GameObject entity) => activeCurses.ContainsKey(entity);
     public static bool HasCurse(GameObject entity, string name)
         => activeCurses.TryGetValue(entity, out Dictionary<CurseEffectType, CurseEffect> curses)

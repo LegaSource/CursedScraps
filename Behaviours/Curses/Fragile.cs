@@ -32,7 +32,7 @@ public class Fragile(int playerWhoHit, int duration, System.Action onApply, Syst
             if (player.ItemSlots[i] == null) continue;
             _ = objectsToDestroy.Add(player.ItemSlots[i]);
         }
-        player.DropAllHeldItemsAndSync();
+        player.DropAllHeldItemsAndSync(player.transform.position, player.localItemHolder.position, player.localItemHolder.eulerAngles, player.playerEye.transform.position, player.playerEye.transform.eulerAngles);
         foreach (GrabbableObject grabbableObject in objectsToDestroy)
         {
             if (string.IsNullOrEmpty(grabbableObject.itemProperties?.itemName)) continue;

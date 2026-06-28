@@ -24,7 +24,7 @@ public class PlayerControllerBPatch
     [HarmonyPostfix]
     private static void PlayerFall(ref PlayerControllerB __instance) => Fragile.PlayerFall(__instance);
 
-    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.UpdatePlayerPositionClientRpc))]
+    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.UpdatePlayerPositionRpc))]
     [HarmonyPostfix]
     private static void UpdatePlayerPositionClientRpc(ref PlayerControllerB __instance) => Diminutive.PlayerCollision(__instance);
 
